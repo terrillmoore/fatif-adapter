@@ -5,26 +5,36 @@ Fatif DS 20x25 Adapter Lensboard — Three-Piece Laminated Design
 Generates STEP and DXF files for laser-cut fabrication (SendCutSend).
 
 Design: Terry Moore / Claude
-Material: 6061-T6 aluminum, laser cut + powder coat
 Assembly: Three sheets laminated with M3 flat head screws
+
+Materials (as-finished thicknesses from SendCutSend):
+  Front:  .063" 6061-T6, powder coated matte black → 1.78mm
+  Middle: .025" 2024-T3, bare (sandwiched, no finish needed) → 0.64mm
+  Rear:   .100" 6061-T6, black anodized → ~2.56mm
 
 Coordinate convention:
   Z axis: z=0 is back face (camera side)
-  Rear sheet:   z=0.0 to z=3.0  (3.0mm thick, camera side)
-  Middle sheet: z=3.0 to z=3.5  (0.5mm thick, light seal)
-  Front sheet:  z=3.5 to z=5.5  (2.0mm thick, lens side)
+  Rear sheet:   z=0.00 to z=2.56  (camera side, black anodized)
+  Middle sheet: z=2.56 to z=3.20  (light seal, bare aluminum)
+  Front sheet:  z=3.20 to z=4.98  (lens side, powder coated)
   XY: origin at center of board
   +Y = top, -Y = bottom, +X = right, -X = left (viewed from lens side)
 
+Dimensions from caliper measurements of Fatif DS original lensboard:
+  Outer profile: 171.5mm square, R50.75 corners (70mm straight edge)
+  Lip thickness: 2.50mm (clips accommodate exactly this, no more)
+  Lip/step width: 5.75mm from outer edge
+  Casting opening depth: 5.5mm (4.9mm to inner rib)
+
 Three-piece laminated approach:
-  Front sheet (2.0mm):  Full Fatif profile with Gowland cutout
-  Middle sheet (0.5mm): Full Fatif profile with bore only — seals light
-    leaks at corners where rear sheet R42.5 corners don't cover
-    the front sheet's 139mm square cutout
-  Rear sheet (3.0mm):   Smaller "baffle" profile with bore
-  Front+middle overhang rear by 7.5mm all around, creating the
-    2.5mm-thick lip that seats into the Fatif standard clips.
-  Total thickness: 2.0 + 0.5 + 3.0 = 5.5mm (matches original)
+  Front sheet (1.78mm): Full Fatif profile with Gowland cutout
+  Middle sheet (0.64mm): Full Fatif profile with bore only — seals
+    corner light leaks where rear sheet R45 corners don't cover
+    the front sheet's 139mm square cutout at the diagonals
+  Rear sheet (2.56mm): Smaller "baffle" profile with bore
+  Front+middle overhang rear by 5.75mm all around, creating the
+    2.42mm lip that seats into the Fatif standard spring clips.
+  Total thickness: 1.78 + 0.64 + 2.56 = 4.98mm
 
 Board retention — Cambo-style clips:
   Fixed bottom clip: flat bar mounted below cutout, overlaps board ~3mm
@@ -37,26 +47,31 @@ import math
 import os
 
 # ================================================================
-# PARAMETERS (all dimensions in mm)
+# PARAMETERS (all dimensions in mm, as-finished unless noted)
 # ================================================================
 
-# --- Outer profile (matches Fatif original lensboard) ---
-BOARD_SIZE = 170.0          # square dimension
-BOARD_CORNER_R = 50.0       # corner radius
-TOTAL_THICKNESS = 5.5       # total laminated thickness
+# --- Outer profile (from caliper measurements of Fatif original) ---
+BOARD_SIZE = 171.5          # square dimension (ruler measurement)
+BOARD_CORNER_R = 50.75      # corner radius: (171.5 - 70mm straight edge) / 2
 
-# --- Sheet thicknesses (TBD after measuring — adjust here) ---
-FRONT_THICK = 2.0           # front sheet thickness
-MIDDLE_THICK = 0.5          # middle sheet thickness (light seal)
-REAR_THICK = 3.0            # rear sheet thickness
+# --- Sheet thicknesses (as-finished, including coatings) ---
+# Front: SendCutSend .063" 6061-T6 powder coated (1.60 raw + 0.18 coat)
+# Middle: SendCutSend .025" 2024-T3 bare (sandwiched, no finish)
+# Rear: SendCutSend .100" 6061-T6 black anodized (2.54 raw + ~0.02 anodize)
+FRONT_THICK = 1.78          # .063" 6061 powder coated
+MIDDLE_THICK = 0.64         # .025" 2024-T3 bare
+REAR_THICK = 2.56           # .100" 6061 black anodized
 
-# --- Back perimeter step (created by size difference between sheets) ---
-STEP_WIDTH = 7.5            # overhang of front+middle beyond rear
-REAR_SIZE = BOARD_SIZE - 2 * STEP_WIDTH        # = 155.0
-REAR_CORNER_R = BOARD_CORNER_R - STEP_WIDTH    # = 42.5
+TOTAL_THICKNESS = FRONT_THICK + MIDDLE_THICK + REAR_THICK  # = 4.98mm
+
+# --- Back perimeter step (from caliper measurement) ---
+STEP_WIDTH = 5.75           # lip width from outer edge (caliper)
+REAR_SIZE = BOARD_SIZE - 2 * STEP_WIDTH        # = 160.0
+REAR_CORNER_R = BOARD_CORNER_R - STEP_WIDTH    # = 45.0
 
 # --- Front cutout (Gowland board drops through this) ---
-GOWLAND_SIZE = 139.0        # 138.5mm nominal + 0.5mm clearance
+# Gowland boards measure 137.76 x 137.70mm; cutout gives ~0.6mm clearance/side
+GOWLAND_SIZE = 139.0        # cutout size
 GOWLAND_CORNER_R = 3.4      # Gowland board corner radius
 
 # --- Central through bore (rear + middle sheets) ---
@@ -66,16 +81,18 @@ BORE_DIA = 110.0            # clears Ilex #5 flange with margin
 M3_CLEARANCE = 3.4          # M3 clearance hole diameter
 M3_TAP = 2.5                # M3 tap drill diameter
 M3_CSK_DIA = 6.5            # M3 flat head countersink diameter
-M3_CSK_DEPTH = 1.5          # countersink depth (< FRONT_THICK)
+M3_CSK_DEPTH = 1.2          # countersink depth (< FRONT_THICK)
 
 # --- Screw placement ---
-# Assembly screws at 4 diagonal positions in the overlap zone
-# Overlap band: ~69.5mm to ~77.5mm from center
-ASSY_SCREW_R = 73.5         # radial distance from center for assembly screws
+# Overlap zone where all three sheets are solid:
+#   Front cutout inner edge: 69.5mm from center
+#   Rear sheet outer edge:   80.0mm from center
+#   Band: 69.5 to 80.0mm (10.5mm wide)
+ASSY_SCREW_R = 74.75        # midpoint of overlap band
 
 # Clip screws at top and bottom center
 CLIP_SCREW_X_SPACING = 50.0 # distance between clip screw pair (center to center)
-CLIP_SCREW_Y_OFFSET = 73.5  # Y distance from center for clip screws
+CLIP_SCREW_Y_OFFSET = 74.75 # Y distance from center for clip screws
 
 # --- Clips ---
 CLIP_LENGTH = 139.0         # same as cutout width
@@ -92,19 +109,19 @@ TAB_LENGTH = 15.0           # tab extends beyond clip end
 TAB_HEIGHT = 8.0            # bent tab height (90° upward)
 
 # --- Derived ---
-HALF_BOARD = BOARD_SIZE / 2          # = 85.0
-HALF_GOWLAND = GOWLAND_SIZE / 2     # = 69.5
-HALF_REAR = REAR_SIZE / 2           # = 77.5
+HALF_BOARD = BOARD_SIZE / 2
+HALF_GOWLAND = GOWLAND_SIZE / 2
+HALF_REAR = REAR_SIZE / 2
 
-REAR_Z_BOT = 0.0                                # rear sheet bottom
-REAR_Z_TOP = REAR_THICK                         # = 3.0
-MIDDLE_Z_BOT = REAR_THICK                       # = 3.0
-MIDDLE_Z_TOP = REAR_THICK + MIDDLE_THICK        # = 3.5
-FRONT_Z_BOT = REAR_THICK + MIDDLE_THICK         # = 3.5
-FRONT_Z_TOP = TOTAL_THICKNESS                    # = 5.5
+REAR_Z_BOT = 0.0
+REAR_Z_TOP = REAR_THICK
+MIDDLE_Z_BOT = REAR_THICK
+MIDDLE_Z_TOP = REAR_THICK + MIDDLE_THICK
+FRONT_Z_BOT = REAR_THICK + MIDDLE_THICK
+FRONT_Z_TOP = TOTAL_THICKNESS
 
-# Lip thickness = front + middle = 2.0 + 0.5 = 2.5mm (matches original)
-LIP_THICK = FRONT_THICK + MIDDLE_THICK
+# Lip thickness = front + middle (these two sheets overhang the rear)
+LIP_THICK = FRONT_THICK + MIDDLE_THICK  # = 2.42mm (≤ 2.50mm clip limit)
 
 
 # ================================================================
@@ -127,8 +144,6 @@ def rounded_rect(wp, size, corner_r):
 
 # Assembly screws: 4 positions on cardinal axes (not diagonals —
 # diagonals fall inside the front sheet's 139mm cutout).
-# Left/right at (±R, 0), top/bottom at (0, ±R).
-# Top/bottom are 25mm from nearest clip screw — no conflict.
 ASSY_SCREW_POSITIONS = [
     ( ASSY_SCREW_R,  0),   # right
     (-ASSY_SCREW_R,  0),   # left
@@ -160,8 +175,9 @@ ALL_SCREW_POSITIONS = (
 # ================================================================
 
 print("Building three-piece laminated Fatif adapter...\n")
-print("  [1/6] Front sheet: %.0fmm sq, R%.0f, %.1fmm thick (z=%.1f to %.1f)"
+print("  [1/6] Front sheet: %.1fmm sq, R%.2f, %.2fmm thick (z=%.2f to %.2f)"
       % (BOARD_SIZE, BOARD_CORNER_R, FRONT_THICK, FRONT_Z_BOT, FRONT_Z_TOP))
+print("         .063\" 6061-T6 powder coated matte black")
 
 # Base plate
 front_sheet = (
@@ -203,17 +219,18 @@ for (x, y) in ALL_SCREW_POSITIONS:
 # PART 2: MIDDLE SHEET (light seal)
 # ================================================================
 
-print("  [2/6] Middle sheet: %.0fmm sq, R%.0f, %.1fmm thick (z=%.1f to %.1f)"
+print("  [2/6] Middle sheet: %.1fmm sq, R%.2f, %.2fmm thick (z=%.2f to %.2f)"
       % (BOARD_SIZE, BOARD_CORNER_R, MIDDLE_THICK, MIDDLE_Z_BOT, MIDDLE_Z_TOP))
+print("         .025\" 2024-T3 bare (sandwiched)")
 
-# Same outer profile as front sheet — full Fatif size
+# Same outer profile as front sheet — full Fatif size for corner coverage
 middle_sheet = (
     rounded_rect(cq.Workplane("XY").workplane(offset=MIDDLE_Z_BOT),
                  BOARD_SIZE, BOARD_CORNER_R)
     .extrude(MIDDLE_THICK)
 )
 
-# Central bore (same as rear sheet)
+# Central bore
 bore_middle = (
     cq.Workplane("XY")
     .workplane(offset=MIDDLE_Z_BOT - 1)
@@ -238,8 +255,9 @@ for (x, y) in ALL_SCREW_POSITIONS:
 # PART 3: REAR SHEET
 # ================================================================
 
-print("  [3/6] Rear sheet: %.0fmm sq, R%.1f, %.1fmm thick (z=%.1f to %.1f)"
+print("  [3/6] Rear sheet: %.1fmm sq, R%.2f, %.2fmm thick (z=%.2f to %.2f)"
       % (REAR_SIZE, REAR_CORNER_R, REAR_THICK, REAR_Z_BOT, REAR_Z_TOP))
+print("         .100\" 6061-T6 black anodized")
 
 # Base plate
 rear_sheet = (
@@ -408,9 +426,9 @@ print("Bounding box verification:")
 for name, part in parts.items():
     bb = part.val().BoundingBox()
     print(f"  {name}:")
-    print(f"    X: {bb.xmin:.1f} to {bb.xmax:.1f}  ({bb.xmax - bb.xmin:.1f}mm)")
-    print(f"    Y: {bb.ymin:.1f} to {bb.ymax:.1f}  ({bb.ymax - bb.ymin:.1f}mm)")
-    print(f"    Z: {bb.zmin:.1f} to {bb.zmax:.1f}  ({bb.zmax - bb.zmin:.1f}mm)")
+    print(f"    X: {bb.xmin:.2f} to {bb.xmax:.2f}  ({bb.xmax - bb.xmin:.2f}mm)")
+    print(f"    Y: {bb.ymin:.2f} to {bb.ymax:.2f}  ({bb.ymax - bb.ymin:.2f}mm)")
+    print(f"    Z: {bb.zmin:.2f} to {bb.zmax:.2f}  ({bb.zmax - bb.zmin:.2f}mm)")
 
 # ================================================================
 # DESIGN SUMMARY
@@ -419,18 +437,18 @@ for name, part in parts.items():
 print("\n" + "=" * 60)
 print("Design summary — Three-Piece Laminated Adapter:")
 print(f"  Front sheet:    {BOARD_SIZE}x{BOARD_SIZE}mm, R{BOARD_CORNER_R}, "
-      f"{FRONT_THICK}mm thick")
+      f"{FRONT_THICK}mm (.063\" 6061 powder coated)")
 print(f"    Cutout:       {GOWLAND_SIZE}x{GOWLAND_SIZE}mm, R{GOWLAND_CORNER_R}")
 print(f"  Middle sheet:   {BOARD_SIZE}x{BOARD_SIZE}mm, R{BOARD_CORNER_R}, "
-      f"{MIDDLE_THICK}mm thick (light seal)")
+      f"{MIDDLE_THICK}mm (.025\" 2024-T3 bare)")
 print(f"    Bore:         dia {BORE_DIA}mm")
 print(f"  Rear sheet:     {REAR_SIZE}x{REAR_SIZE}mm, R{REAR_CORNER_R}, "
-      f"{REAR_THICK}mm thick")
+      f"{REAR_THICK}mm (.100\" 6061 black anodized)")
 print(f"    Bore:         dia {BORE_DIA}mm")
 print(f"  Laminated:      {FRONT_THICK}+{MIDDLE_THICK}+{REAR_THICK} = "
-      f"{TOTAL_THICKNESS}mm total")
-print(f"  Lip:            {LIP_THICK}mm thick (front+middle overhang "
-      f"{STEP_WIDTH}mm beyond rear)")
+      f"{TOTAL_THICKNESS:.2f}mm total")
+print(f"  Lip:            {LIP_THICK:.2f}mm (front+middle overhang "
+      f"{STEP_WIDTH}mm beyond rear)  [limit: 2.50mm]")
 print(f"  Assembly screws: 4x M3 flat head at R={ASSY_SCREW_R}mm (cardinal axes)")
 print(f"  Bottom clip:    {CLIP_LENGTH}x{CLIP_WIDTH}x{CLIP_THICK}mm, "
       f"fixed, {CLIP_OVERLAP}mm overlap")
@@ -438,7 +456,8 @@ print(f"  Top clip:       {CLIP_LENGTH}x{CLIP_WIDTH}x{CLIP_THICK}mm, "
       f"spring-loaded, slots for {SLOT_LENGTH - SLOT_WIDTH:.1f}mm travel")
 print(f"  Clip screws:    2+2 M3 at X spacing {CLIP_SCREW_X_SPACING}mm, "
       f"Y offset {CLIP_SCREW_Y_OFFSET}mm")
-print(f"  Material:       6061-T6 aluminum")
-print(f"  Fabrication:    Laser cut + powder coat (SendCutSend)")
+print(f"  Materials:      6061-T6 (front/rear), 2024-T3 (middle)")
+print(f"  Finishes:       Powder coat (front), bare (middle), "
+      f"black anodize (rear)")
 print("=" * 60)
 print("\nFiles ready for SendCutSend upload (STEP for quoting, DXF for cutting)")
