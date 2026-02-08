@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Fatif DS 20x25 Adapter Lensboard - Technical Drawing</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 20px; background: white; }
+  h1 { font-size: 18px; margin-bottom: 5px; }
+  h2 { font-size: 14px; color: #555; margin-top: 0; }
+  .drawing-container { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; }
+  .view-label { font-weight: bold; font-size: 13px; text-anchor: middle; }
+  .dim-text { font-size: 9px; font-family: Arial, sans-serif; }
+  .note-text { font-size: 10px; font-family: Arial, sans-serif; }
+  .title-block { border: 2px solid black; padding: 10px; margin-top: 20px; max-width: 800px; }
+  .title-block td { padding: 2px 8px; font-size: 11px; }
+  .notes { max-width: 800px; margin-top: 15px; font-size: 11px; line-height: 1.6; }
+  .notes li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>Fatif DS 20x25 Adapter Lensboard</h1>
+<h2>Accepts 138.5mm Gowland 8x10 lensboards via horizontal slide</h2>
+
+<div class="drawing-container">
+
+<!-- FRONT VIEW -->
+<svg width="420" height="480" viewBox="-10 -10 420 480">
+  <text x="200" y="15" class="view-label">FRONT VIEW (Lens Side)</text>
+
+  <!-- Outer profile: 170mm sq, R50 corners, scale ~2:1 pixels/mm, offset to center -->
+  <g transform="translate(30, 35)">
+    <!-- scale: 2px per mm, board centered at (170, 200) -->
+    <g transform="scale(2.0)">
+      <!-- Outer profile -->
+      <path d="
+        M 35,0 L 135,0
+        A 50,50 0 0,1 185,50
+        L 185,120 A 50,50 0 0,1 135,170
+        L 35,170 A 50,50 0 0,1 -15,120
+        L -15,50 A 50,50 0 0,1 35,0 Z"
+        fill="none" stroke="black" stroke-width="0.8"
+        transform="translate(15,0)"/>
+
+      <!-- Front recess outline (138.5mm sq, R3.4, clearance 139mm) -->
+      <!-- Centered: offset = (170-139)/2 = 15.5 from each edge -->
+      <path d="
+        M 19.4,15.5 L 154.1,15.5
+        A 3.4,3.4 0 0,1 157.5,18.9
+        L 157.5,150.1 A 3.4,3.4 0 0,1 154.1,153.5
+        L 19.4,153.5 A 3.4,3.4 0 0,1 16,150.1
+        L 16,18.9 A 3.4,3.4 0 0,1 19.4,15.5 Z"
+        fill="#e8e8ff" fill-opacity="0.5" stroke="blue" stroke-width="0.4" stroke-dasharray="2,1"
+        transform="translate(15,0.5)"/>
+
+      <!-- Slide opening (recess extends to right edge) -->
+      <rect x="172" y="16" width="28" height="138" fill="#e8e8ff" fill-opacity="0.3" stroke="blue" stroke-width="0.3" stroke-dasharray="2,1"/>
+
+      <!-- Central bore (110mm dia) -->
+      <circle cx="100" cy="85" r="55" fill="white" stroke="black" stroke-width="0.6"/>
+
+      <!-- Ball plunger hole (in -Y wall = bottom of drawing) -->
+      <circle cx="100" cy="154" r="2.5" fill="none" stroke="red" stroke-width="0.4"/>
+      <line x1="97.5" y1="154" x2="102.5" y2="154" stroke="red" stroke-width="0.3"/>
+      <line x1="100" y1="151.5" x2="100" y2="156.5" stroke="red" stroke-width="0.3"/>
+
+      <!-- Slide direction arrow -->
+      <line x1="140" y1="-8" x2="175" y2="-8" stroke="green" stroke-width="0.6" marker-end="url(#arrowhead)"/>
+      <text x="148" y="-10" font-size="4" fill="green">SLIDE IN</text>
+
+    </g>
+
+    <!-- Dimensions (in drawing coordinates, scaled) -->
+    <!-- Overall width: 170mm -->
+    <line x1="0" y1="355" x2="0" y2="365" stroke="black" stroke-width="0.5"/>
+    <line x1="360" y1="355" x2="360" y2="365" stroke="black" stroke-width="0.5"/><!-- adjusted: was 400 -->
+    <line x1="0" y1="360" x2="360" y2="360" stroke="black" stroke-width="0.5"/>
+    <text x="180" y="375" class="dim-text" text-anchor="middle">170.00</text>
+
+    <!-- Overall height: 170mm -->
+    <line x1="375" y1="0" x2="385" y2="0" stroke="black" stroke-width="0.5"/>
+    <line x1="375" y1="340" x2="385" y2="340" stroke="black" stroke-width="0.5"/>
+    <line x1="380" y1="0" x2="380" y2="340" stroke="black" stroke-width="0.5"/>
+    <text x="380" y="175" class="dim-text" text-anchor="middle" transform="rotate(90, 380, 175)">170.00</text>
+
+    <!-- Recess: 139mm (with clearance) -->
+    <line x1="62" y1="385" x2="62" y2="395" stroke="blue" stroke-width="0.4"/>
+    <line x1="345" y1="385" x2="345" y2="395" stroke="blue" stroke-width="0.4"/>
+    <line x1="62" y1="390" x2="345" y2="390" stroke="blue" stroke-width="0.4"/>
+    <text x="203" y="403" class="dim-text" text-anchor="middle" fill="blue">139.00 (recess)</text>
+
+    <!-- Corner radius annotation -->
+    <text x="310" y="25" class="dim-text" fill="black">R50</text>
+    <text x="68" y="50" class="dim-text" fill="blue">R3.4</text>
+
+    <!-- Bore diameter -->
+    <line x1="90" y1="170" x2="310" y2="170" stroke="black" stroke-width="0.4"/>
+    <text x="200" y="165" class="dim-text" text-anchor="middle">⌀110.00 THRU</text>
+
+    <!-- Ball plunger annotation -->
+    <text x="200" y="325" class="dim-text" fill="red" text-anchor="start">M6 ball plunger, 10mm deep</text>
+    <line x1="200" y1="308" x2="200" y2="320" stroke="red" stroke-width="0.4"/>
+  </g>
+
+  <defs>
+    <marker id="arrowhead" markerWidth="6" markerHeight="4" refX="6" refY="2" orient="auto">
+      <polygon points="0 0, 6 2, 0 4" fill="green"/>
+    </marker>
+  </defs>
+</svg>
+
+<!-- CROSS SECTION A-A -->
+<svg width="420" height="250" viewBox="-10 -10 420 250">
+  <text x="200" y="15" class="view-label">SECTION A-A (Through Center, Horizontal)</text>
+
+  <g transform="translate(20, 40)">
+    <!-- Scale: 6px per mm for the cross section (thickness exaggerated for clarity) -->
+    <!-- Board width = 170mm at scale 2 = 340px -->
+    <!-- Board thickness = 5.5mm at scale 6 = 33px -->
+    <!-- We'll use different scales: X=2px/mm, Z=12px/mm for visibility -->
+
+    <!-- Full board profile (front face up, back face down) -->
+    <!-- Back face at y=66 (5.5*12), front face at y=0 -->
+    <!-- Board extends from x=0 to x=340 (170*2) -->
+
+    <!-- Main body outline -->
+    <rect x="0" y="0" width="340" height="66" fill="#d0d0d0" stroke="black" stroke-width="1"/>
+
+    <!-- Back perimeter step: left side -->
+    <!-- Step width = 7.5mm * 2 = 15px from each edge -->
+    <!-- Step depth = 3mm * 12 = 36px from back (bottom) -->
+    <rect x="0" y="30" width="15" height="36" fill="white" stroke="black" stroke-width="0.8"/>
+    <!-- Back perimeter step: right side -->
+    <rect x="325" y="30" width="15" height="36" fill="white" stroke="black" stroke-width="0.8"/>
+
+    <!-- Front recess -->
+    <!-- Recess starts at (170-139)/2 = 15.5mm = 31px from left -->
+    <!-- Recess depth = 0.5mm * 12 = 6px from front (top) -->
+    <!-- Recess extends to right edge (slide opening) -->
+    <rect x="31" y="0" width="309" height="6" fill="white" stroke="blue" stroke-width="0.6"/>
+
+    <!-- Central bore (110mm dia = 220px wide) -->
+    <!-- Centered: starts at (170-110)/2 = 30mm = 60px -->
+    <rect x="60" y="0" width="220" height="66" fill="white" stroke="black" stroke-width="1"/>
+
+    <!-- Hatch the solid sections -->
+    <g stroke="#888" stroke-width="0.3" opacity="0.4">
+      <!-- Left section (between step and bore) -->
+      <clipPath id="left-section">
+        <path d="M 15,0 L 60,0 L 60,66 L 15,66 L 15,30 L 0,30 L 0,0 Z"/>
+      </clipPath>
+      <g clip-path="url(#left-section)">
+        <line x1="0" y1="0" x2="66" y2="66"/><line x1="8" y1="0" x2="74" y2="66"/>
+        <line x1="16" y1="0" x2="82" y2="66"/><line x1="24" y1="0" x2="90" y2="66"/>
+        <line x1="32" y1="0" x2="98" y2="66"/><line x1="40" y1="0" x2="106" y2="66"/>
+        <line x1="48" y1="0" x2="114" y2="66"/>
+      </g>
+      <!-- Right section -->
+      <clipPath id="right-section">
+        <path d="M 280,0 L 340,0 L 340,30 L 325,30 L 325,66 L 280,66 Z"/>
+      </clipPath>
+      <g clip-path="url(#right-section)">
+        <line x1="270" y1="0" x2="336" y2="66"/><line x1="278" y1="0" x2="344" y2="66"/>
+        <line x1="286" y1="0" x2="352" y2="66"/><line x1="294" y1="0" x2="360" y2="66"/>
+        <line x1="302" y1="0" x2="368" y2="66"/><line x1="310" y1="0" x2="376" y2="66"/>
+        <line x1="318" y1="0" x2="384" y2="66"/>
+      </g>
+    </g>
+
+    <!-- Dimension: total thickness 5.5mm -->
+    <line x1="-15" y1="0" x2="-5" y2="0" stroke="black" stroke-width="0.4"/>
+    <line x1="-15" y1="66" x2="-5" y2="66" stroke="black" stroke-width="0.4"/>
+    <line x1="-10" y1="0" x2="-10" y2="66" stroke="black" stroke-width="0.4"/>
+    <text x="-12" y="38" class="dim-text" text-anchor="middle" transform="rotate(-90,-12,38)">5.50</text>
+
+    <!-- Dimension: lip thickness 2.5mm -->
+    <line x1="350" y1="30" x2="365" y2="30" stroke="black" stroke-width="0.4"/>
+    <line x1="350" y1="66" x2="365" y2="66" stroke="black" stroke-width="0.4"/>
+    <line x1="360" y1="30" x2="360" y2="66" stroke="black" stroke-width="0.4"/>
+    <text x="375" y="52" class="dim-text" text-anchor="middle">2.50</text>
+
+    <!-- Dimension: step depth 3.0mm -->
+    <line x1="350" y1="0" x2="365" y2="0" stroke="black" stroke-width="0.4"/>
+    <line x1="360" y1="0" x2="360" y2="30" stroke="black" stroke-width="0.4"/>
+    <text x="375" y="18" class="dim-text" text-anchor="middle">3.00</text>
+
+    <!-- Dimension: recess depth 0.5mm -->
+    <line x1="35" y1="0" x2="35" y2="-15" stroke="blue" stroke-width="0.3"/>
+    <line x1="35" y1="6" x2="35" y2="18" stroke="blue" stroke-width="0.3"/>
+    <text x="45" y="-4" class="dim-text" fill="blue">0.50 recess</text>
+
+    <!-- Dimension: step width 7.5mm -->
+    <line x1="0" y1="78" x2="0" y2="85" stroke="black" stroke-width="0.4"/>
+    <line x1="15" y1="78" x2="15" y2="85" stroke="black" stroke-width="0.4"/>
+    <line x1="0" y1="82" x2="15" y2="82" stroke="black" stroke-width="0.4"/>
+    <text x="7" y="95" class="dim-text" text-anchor="middle">7.50</text>
+
+    <!-- Dimension: bore 110mm -->
+    <line x1="60" y1="78" x2="60" y2="85" stroke="black" stroke-width="0.4"/>
+    <line x1="280" y1="78" x2="280" y2="85" stroke="black" stroke-width="0.4"/>
+    <line x1="60" y1="82" x2="280" y2="82" stroke="black" stroke-width="0.4"/>
+    <text x="170" y="95" class="dim-text" text-anchor="middle">⌀110.00</text>
+
+    <!-- Labels -->
+    <text x="170" y="115" class="note-text" text-anchor="middle" fill="#555">FRONT FACE (top) — BACK FACE (bottom)</text>
+    <text x="170" y="130" class="note-text" text-anchor="middle" fill="#555">Note: Z scale exaggerated ~6× for clarity</text>
+
+    <!-- Gowland board ghost -->
+    <rect x="31" y="-12" width="277" height="18" fill="none" stroke="green" stroke-width="0.8" stroke-dasharray="4,2"/>
+    <text x="170" y="-16" class="dim-text" fill="green" text-anchor="middle">Gowland board (1.6mm thick)</text>
+  </g>
+</svg>
+
+<!-- BACK VIEW -->
+<svg width="420" height="460" viewBox="-10 -10 420 460">
+  <text x="200" y="15" class="view-label">BACK VIEW (Camera Side)</text>
+
+  <g transform="translate(30, 35)">
+    <g transform="scale(2.0)">
+      <!-- Outer profile -->
+      <path d="
+        M 35,0 L 135,0
+        A 50,50 0 0,1 185,50
+        L 185,120 A 50,50 0 0,1 135,170
+        L 35,170 A 50,50 0 0,1 -15,120
+        L -15,50 A 50,50 0 0,1 35,0 Z"
+        fill="#e0e0e0" stroke="black" stroke-width="0.8"
+        transform="translate(15,0)"/>
+
+      <!-- Step inner profile (raised center area) -->
+      <path d="
+        M 50,7.5 L 120,7.5
+        A 42.5,42.5 0 0,1 162.5,50
+        L 162.5,120 A 42.5,42.5 0 0,1 120,162.5
+        L 50,162.5 A 42.5,42.5 0 0,1 7.5,120
+        L 7.5,50 A 42.5,42.5 0 0,1 50,7.5 Z"
+        fill="#c8c8c8" stroke="black" stroke-width="0.5"
+        transform="translate(15,0)"/>
+
+      <!-- Central bore -->
+      <circle cx="100" cy="85" r="55" fill="white" stroke="black" stroke-width="0.6"/>
+
+      <!-- Step area label -->
+      <text x="40" y="30" font-size="4" fill="#666">2.5mm lip</text>
+      <text x="40" y="35" font-size="4" fill="#666">(perimeter step)</text>
+
+      <!-- Raised center label -->
+      <text x="65" y="60" font-size="4" fill="#444">5.5mm full</text>
+      <text x="65" y="65" font-size="4" fill="#444">thickness</text>
+    </g>
+
+    <!-- Step inner radius -->
+    <text x="78" y="68" class="dim-text">R42.5</text>
+
+    <!-- Step width dimension -->
+    <line x1="0" y1="380" x2="30" y2="380" stroke="black" stroke-width="0.4"/>
+    <text x="15" y="393" class="dim-text" text-anchor="middle">7.50</text>
+  </g>
+</svg>
+
+</div>
+
+<table class="title-block">
+  <tr><td colspan="4" style="font-size:14px; font-weight:bold; text-align:center; border-bottom:1px solid black; padding-bottom:5px;">
+    FATIF DS 20x25 ADAPTER LENSBOARD</td></tr>
+  <tr><td><b>Material:</b></td><td>6061-T6 Aluminum</td>
+      <td><b>Stock:</b></td><td>6mm plate, face to 5.5mm</td></tr>
+  <tr><td><b>Finish:</b></td><td>Black anodize or matte black powder coat</td>
+      <td><b>Tolerance:</b></td><td>±0.1mm unless noted</td></tr>
+  <tr><td><b>Date:</b></td><td>2026-02-07</td>
+      <td><b>Scale:</b></td><td>Approx 2:1 (front/back), section not to scale</td></tr>
+</table>
+
+<div class="notes">
+<b>Notes:</b>
+<ol>
+  <li>Outer profile: 170.00mm square with R50.00mm corners (4 places).</li>
+  <li>Back perimeter step: 3.00mm deep × 7.50mm wide from outer edge, following outer profile. Inner edge at R42.50mm corners. This lip (2.50mm thick) seats into Fatif front standard clips.</li>
+  <li>Front recess: 139.00mm square (138.5mm nominal + 0.5mm clearance) with R3.40mm corners, 0.50mm deep. Open on right side (+X) for horizontal board insertion. Fixed stop on left side (-X).</li>
+  <li>Central bore: ⌀110.00mm through all, centered.</li>
+  <li>Ball plunger hole: M6 × 1.0 tapped hole, 10mm deep, in bottom wall of front recess (-Y side), centered on X axis. Horizontal, perpendicular to board face. For off-the-shelf M6 spring-loaded ball plunger (e.g., McMaster 3439A21 or similar).</li>
+  <li>Finish all surfaces. Back face and bore ID to be matte black (anodize preferred) to minimize reflections.</li>
+  <li>Deburr all edges. Break sharp edges 0.2mm max.</li>
+  <li>Board accepts 138.5mm × 138.5mm × 1.6mm Gowland 8x10 lensboards via horizontal slide from right side.</li>
+  <li><b>VERIFY ALL DIMENSIONS AGAINST ACTUAL CAMERA BEFORE FABRICATION.</b> Dimensions derived from hand measurements without calipers.</li>
+</ol>
+</div>
+
+</body>
+</html>
