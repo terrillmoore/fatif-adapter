@@ -8,18 +8,48 @@ fabrication via [SendCutSend](https://sendcutsend.com/).
 
 Three aluminum sheets laminated with M3 flat head screws:
 
-| Sheet | Size | Thickness | Feature |
-|-------|------|-----------|---------|
-| Front | 170mm sq, R50 | 2.0mm | 139mm square cutout for Gowland board |
-| Middle | 170mm sq, R50 | 0.5mm | 110mm bore only — seals corner light leaks |
-| Rear | 155mm sq, R42.5 | 3.0mm | 110mm bore |
+| Sheet | Size | Material | Thickness | Finish | Feature |
+|-------|------|----------|-----------|--------|---------|
+| Front | 171.5mm sq, R50.75 | .063" 6061-T6 | 1.78mm | Powder coat matte black | 139mm square cutout for Gowland board |
+| Middle | 171.5mm sq, R50.75 | .025" 2024-T3 | 0.64mm | Bare (sandwiched) | 110mm bore only — seals corner light leaks |
+| Rear | 160mm sq, R45 | .100" 6061-T6 | 2.56mm | Black anodize | 110mm bore |
 
-- **Total thickness:** 5.5mm (matches Fatif original)
-- **Lip:** Front + middle overhang rear by 7.5mm, creating the 2.5mm lip for Fatif standard clips
+- **Total thickness:** 4.98mm
+- **Lip:** Front + middle overhang rear by 5.75mm, creating the 2.42mm lip for Fatif spring clips (limit: 2.50mm)
 - **Board retention:** Cambo-style clips — fixed bottom bar + spring-loaded sliding top bar
+- **Assembly:** 4x M3 flat head screws on cardinal axes at R=74.75mm
 
 The CadQuery script generates individual STEP and DXF files for each part,
 plus a combined assembly STEP for visualization.
+
+### Surface finish rationale
+
+The rear sheet faces into the camera body and is the primary stray-light
+surface. Black anodize (MIL-A-8625 Type II Class 2) was chosen over matte
+powder coat for several reasons:
+
+- **Lower visible-spectrum reflectance.** Black anodize measures ~4-7% total
+  hemispherical reflectance (THR) in 400-700nm vs ~5-10% for matte powder
+  coat. SendCutSend's Axalta Black Magic BK120 is spec'd at 0-9% gloss (60°).
+- **Thinner coating.** Anodize adds ~0.02mm total vs ~0.18mm for powder coat,
+  which matters for the tight lip thickness budget.
+- **Durability.** Anodize is integral to the metal surface and won't chip from
+  board changes or stacking.
+
+Standard black anodize does get reflective in the near-IR (~25-35% above
+700nm) due to the organic dye, but this is largely irrelevant for photographic
+film and digital sensors. For specialty optical applications, bead-blasted
+surfaces or optical-grade anodize (e.g. Pioneer Optical Black, ~1% THR) would
+improve performance further.
+
+The front sheet is powder coated because it faces outward (not a stray-light
+concern inside the camera) and benefits from the more durable, thicker finish
+for handling. The middle sheet needs no finish since it is sandwiched between
+the other two.
+
+References:
+- [TAMU Reflectance of Black Materials Catalog](https://instrumentation.tamu.edu/reflectance-black/)
+- [Pioneer Metal Finishing: Optical Black](https://www.pioneermetal.com/processes/optical-black/)
 
 ## Quick Start
 
@@ -50,13 +80,17 @@ Everything else is installed automatically by `make init`.
 
 ### Adjusting Dimensions
 
-Sheet thicknesses are parametric — measure your Fatif standard with calipers
-and edit the values near the top of `fatif_adapter_cadquery.py`:
+All dimensions are parametric. The current values are from caliper
+measurements of an actual Fatif DS original lensboard. Key parameters
+near the top of `fatif_adapter_cadquery.py`:
 
 ```python
-FRONT_THICK = 2.0
-MIDDLE_THICK = 0.5
-REAR_THICK = 3.0
+BOARD_SIZE = 171.5      # outer profile (mm, square)
+BOARD_CORNER_R = 50.75  # corner radius
+FRONT_THICK = 1.78      # .063" 6061 powder coated
+MIDDLE_THICK = 0.64     # .025" 2024-T3 bare
+REAR_THICK = 2.56       # .100" 6061 black anodized
+STEP_WIDTH = 5.75       # lip width from outer edge
 ```
 
 Then re-run `make build`.
