@@ -1,4 +1,4 @@
-.PHONY: help init build clean
+.PHONY: help init build pdf clean
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -20,5 +20,8 @@ $(VENV)/.installed:
 build: $(VENV)/.installed ## Generate STEP and DXF files
 	$(PYTHON) $(SCRIPT)
 
-clean: ## Remove generated STEP, STL, and DXF files
-	rm -f *.step *.stl *.dxf
+pdf: build ## Convert DXF files to PDF for viewing
+	$(PYTHON) dxf2pdf.py *.dxf
+
+clean: ## Remove generated STEP, STL, DXF, and PDF files
+	rm -f *.step *.stl *.dxf *.pdf
