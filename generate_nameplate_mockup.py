@@ -50,33 +50,32 @@ BOT_CLIP_SCREWS = [(-25, -72.5), (25, -72.5)]
 PAINT_CX = 0.0
 PAINT_CY = 76.0  # center of narrow section (for text placement)
 
-# Paint fill: inset ~1mm from clip edges, stops at tab bend lines
+# Paint fill geometry
 PAINT_INSET = 1.0       # mm inset from clip edges
 PAINT_TAB_MARGIN = 2.0  # mm from clip ends to clear the bend line
+PAINT_CORNER_R = 2.0    # radius for all paint outline corners
 
-# Inset paint outline (follows dog-bone, R side then mirrored)
-# Clip ends at X=±45; paint stops at ±43
-# Clip outer Y=80 → paint Y=79; inner wide Y=66 → paint Y=67
-# Inner narrow Y=72 → paint Y=73; taper X=15→20 → paint X=16→21
-_pe = 45 - PAINT_TAB_MARGIN   # 43
+# Key derived coordinates (inset from clip edges)
+_pe = 45 - PAINT_TAB_MARGIN   # 43 — paint X extent
 _pi = PAINT_INSET
-PAINT_VERTS = [
-    (-_pe, 66 + _pi),           # bottom-left (wide section)
-    (-20 - _pi, 66 + _pi),      # approach taper
-    (-15 - _pi, 72 + _pi),      # taper to narrow
-    ( 15 + _pi, 72 + _pi),      # narrow section
-    ( 20 + _pi, 66 + _pi),      # taper back to wide
-    ( _pe, 66 + _pi),           # bottom-right (wide section)
-    ( _pe, 80 - _pi),           # top-right
-    (-_pe, 80 - _pi),           # top-left
-]
+_top = 80 - _pi               # 79
+_bot_wide = 66 + _pi          # 67
+_bot_narrow = 72 + _pi        # 73
+_taper_outer_x = 20 + _pi     # 21
+_taper_inner_x = 15 + _pi     # 16
 
-# The narrow section height for text sizing (paint inner narrow to paint outer)
-PAINT_NARROW_H = (80 - _pi) - (72 + _pi)  # 79 - 73 = 6mm
+# The narrow section height for text sizing
+PAINT_NARROW_H = _top - _bot_narrow  # 79 - 73 = 6mm
 
+# Cam slot parameters
 SLOT_LENGTH = 9.0
 SLOT_WIDTH = 3.4
 SLOT_ANGLE = 135.0
+
+# Slot clearance zones: stadium shapes around each cam slot
+# M3 pan head ~5.5mm dia; modest clearance matching Crown Graphic
+SLOT_CLEAR_HALF_L = 5.2   # half-length along slot axis
+SLOT_CLEAR_HALF_W = 2.8   # half-width perpendicular to slot
 
 # Output
 SAVE_DPI = 200
@@ -121,12 +120,11 @@ def rounded_square_path(cx, cy, size, r):
     return rounded_rect_path(cx, cy, size, size, r)
 
 
-def draw_cam_slot(ax, cx, cy, length, width, angle_deg, **kwargs):
+def stadium_points(cx, cy, half_l, half_w, angle_deg, n_arc=16):
+    """Return (xs, ys) outline of a stadium shape (slot clearance zone)."""
     angle_rad = np.radians(angle_deg)
-    half_l, half_w = length / 2, width / 2
     dx, dy = np.cos(angle_rad), np.sin(angle_rad)
     nx, ny = -dy, dx
-    n_arc = 12
     pts = []
     for i in range(n_arc + 1):
         theta = np.pi / 2 + np.pi * i / n_arc
@@ -137,15 +135,127 @@ def draw_cam_slot(ax, cx, cy, length, width, angle_deg, **kwargs):
         pts.append((cx - half_l * dx + half_w * (nx * np.cos(theta) + dx * np.sin(theta)),
                      cy - half_l * dy + half_w * (ny * np.cos(theta) + dy * np.sin(theta))))
     pts.append(pts[0])
-    xs, ys = zip(*pts)
+    return [p[0] for p in pts], [p[1] for p in pts]
+
+
+def draw_cam_slot(ax, cx, cy, length, width, angle_deg, **kwargs):
+    """Draw a stadium-shaped cam slot."""
+    xs, ys = stadium_points(cx, cy, length / 2, width / 2, angle_deg)
     ax.fill(xs, ys, **kwargs)
 
 
+def _fillet_polygon(verts, radius, n_arc=6):
+    """
+    Take a list of (x, y) polygon vertices and return a new list with each
+    corner replaced by a circular arc of the given radius. Vertices must be
+    in order (CW or CCW); the polygon is implicitly closed.
+    """
+    n = len(verts)
+    result = []
+    for i in range(n):
+        p_prev = np.array(verts[(i - 1) % n])
+        p_curr = np.array(verts[i])
+        p_next = np.array(verts[(i + 1) % n])
+
+        # Vectors from current vertex to neighbors
+        v_in = p_prev - p_curr
+        v_out = p_next - p_curr
+        len_in = np.linalg.norm(v_in)
+        len_out = np.linalg.norm(v_out)
+
+        if len_in < 1e-9 or len_out < 1e-9:
+            result.append(tuple(p_curr))
+            continue
+
+        u_in = v_in / len_in
+        u_out = v_out / len_out
+
+        # Half-angle between the two edges
+        cos_half = np.dot(u_in + u_out, u_in + u_out)
+        half_bisect = (u_in + u_out)
+        half_len = np.linalg.norm(half_bisect)
+        if half_len < 1e-9:
+            result.append(tuple(p_curr))
+            continue
+
+        # Angle between edges
+        dot = np.clip(np.dot(u_in, u_out), -1, 1)
+        angle = np.arccos(dot)  # full angle between edges
+        half_angle = angle / 2
+
+        if abs(np.sin(half_angle)) < 1e-9:
+            result.append(tuple(p_curr))
+            continue
+
+        # Limit radius so fillet doesn't exceed half the edge length
+        max_r = min(len_in, len_out) / 2 * 0.9
+        r = min(radius, max_r / np.tan(half_angle)) if np.tan(half_angle) > 1e-9 else radius
+
+        # Tangent length: distance from vertex to where the arc starts/ends
+        tan_len = r * np.tan(np.pi / 2 - half_angle)
+
+        # Arc start and end points
+        p_start = p_curr + u_in * tan_len
+        p_end = p_curr + u_out * tan_len
+
+        # Arc center: offset from vertex along bisector
+        bisect = half_bisect / half_len
+        center_dist = r / np.sin(half_angle)
+        center = p_curr + bisect * center_dist
+
+        # Generate arc points from p_start to p_end
+        angle_start = np.arctan2(p_start[1] - center[1], p_start[0] - center[0])
+        angle_end = np.arctan2(p_end[1] - center[1], p_end[0] - center[0])
+
+        # Determine arc direction (should go the short way around)
+        cross = u_in[0] * u_out[1] - u_in[1] * u_out[0]
+        if cross > 0:  # left turn → arc goes CW
+            if angle_end > angle_start:
+                angle_end -= 2 * np.pi
+        else:  # right turn → arc goes CCW
+            if angle_end < angle_start:
+                angle_end += 2 * np.pi
+
+        angles = np.linspace(angle_start, angle_end, n_arc)
+        for a in angles:
+            result.append((center[0] + r * np.cos(a), center[1] + r * np.sin(a)))
+
+    result.append(result[0])
+    return result
+
+
+def paint_outline_points():
+    """
+    Build the paint outline as a smooth polygon with rounded corners
+    at every direction change, matching the Crown Graphic aesthetic.
+    """
+    # Sharp polygon vertices (CCW)
+    sharp = [
+        (-_pe, _bot_wide),       # bottom-left (wide)
+        (-_taper_outer_x, _bot_wide),  # taper start
+        (-_taper_inner_x, _bot_narrow),  # taper to narrow
+        ( _taper_inner_x, _bot_narrow),  # narrow section
+        ( _taper_outer_x, _bot_wide),  # taper back
+        ( _pe, _bot_wide),       # bottom-right (wide)
+        ( _pe, _top),            # top-right
+        (-_pe, _top),            # top-left
+    ]
+    return _fillet_polygon(sharp, PAINT_CORNER_R)
+
+
 def draw_paint_fill(ax, edgecolor="none", lw=0, **kwargs):
-    """Draw the full-clip paint area (inset dog-bone polygon)."""
-    pv = PAINT_VERTS
-    ax.fill([v[0] for v in pv], [v[1] for v in pv],
+    """Draw the full-clip paint area with rounded corners and slot clearance cutouts."""
+    # Outer paint boundary
+    outline = paint_outline_points()
+    ax.fill([p[0] for p in outline], [p[1] for p in outline],
             color=PAINT_BLACK, edgecolor=edgecolor, lw=lw, zorder=7, **kwargs)
+
+    # Slot clearance zones: unpainted stadiums around each cam slot
+    for sx in [-25, 25]:
+        xs, ys = stadium_points(sx, 74, SLOT_CLEAR_HALF_L, SLOT_CLEAR_HALF_W,
+                                SLOT_ANGLE)
+        ax.fill(xs, ys, color=STAINLESS, edgecolor=STAINLESS_EDGE,
+                lw=0.4, zorder=8)
 
 
 def get_px_per_mm(ax):
@@ -269,13 +379,13 @@ def draw_full_view_geom(ax):
         ax.annotate("", xy=(tx + sign * 3, 76), xytext=(tx, 76),
                     arrowprops=dict(arrowstyle="->", color=STAINLESS_EDGE, lw=1.0), zorder=6)
 
-    # Paint fill (full clip face)
+    # Paint fill (includes slot clearance zones)
     draw_paint_fill(ax)
 
-    # Cam slots (punch through paint — show stainless behind)
+    # Actual cam slot holes (dark, through the stainless clearance zones)
     for sx in [-25, 25]:
         draw_cam_slot(ax, sx, 74, SLOT_LENGTH, SLOT_WIDTH, SLOT_ANGLE,
-                      color=STAINLESS, edgecolor=STAINLESS_EDGE, linewidth=0.4, zorder=8)
+                      color="#333333", edgecolor="#555555", linewidth=0.3, zorder=9)
 
     # Bottom clip
     bc = BOT_CLIP_VERTS
@@ -316,13 +426,13 @@ def draw_detail_geom(ax):
         ax.annotate("tab\n(bend up)", xy=(tx, 73), fontsize=5,
                     ha="center", va="center", color="#666666", zorder=4)
 
-    # Paint fill (full clip face)
+    # Paint fill (includes slot clearance zones)
     draw_paint_fill(ax, edgecolor="#444444", lw=0.8)
 
-    # Cam slots (punch through paint — show stainless)
+    # Actual cam slot holes (dark, through the clearance zones)
     for sx in [-25, 25]:
         draw_cam_slot(ax, sx, 74, SLOT_LENGTH, SLOT_WIDTH, SLOT_ANGLE,
-                      color=STAINLESS, edgecolor=STAINLESS_EDGE, linewidth=0.6, zorder=8)
+                      color="#333333", edgecolor="#555555", linewidth=0.5, zorder=9)
 
     # Screw heads (visible through cam slots)
     for sx, sy in TOP_CLIP_SCREWS:
