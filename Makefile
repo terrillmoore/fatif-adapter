@@ -1,4 +1,4 @@
-.PHONY: help init build mockup artwork pdf clean
+.PHONY: help init all build mockup artwork pdf clean
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -16,6 +16,8 @@ $(VENV)/.installed:
 	$(PIP) install --upgrade pip
 	$(PIP) install cadquery
 	@touch $@
+
+all: build mockup artwork ## Generate all artifacts (STEP, DXF, PNG, SVG)
 
 build: $(VENV)/.installed ## Generate STEP and DXF files
 	$(PYTHON) $(SCRIPT)

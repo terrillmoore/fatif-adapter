@@ -80,9 +80,9 @@ sheet (M3×0.5, tap drill 2.5mm).
   alternative for 304 SS clips (also offers painting for logo application).
 - **Deburring:** Specify deburring on all parts, especially clip edges
   that will be handled during board changes.
-- **Clip DXFs** show flat patterns (pre-bend). The top clip has a single
-  45° rectangular tab at the upper-left corner; bend 90° up along the
-  diagonal bend line.
+- **Clip DXFs** show 2D profiles (flat patterns for the top clip, outline
+  for the bottom clip). The top clip has a single 45° rectangular tab at
+  the upper-left corner; bend 90° up along the diagonal bend line.
 - **Tapping:** Rear sheet M3 holes are tap drill size (2.5mm). Specify M3×0.5
   tapping, or tap by hand after receiving parts.
 
@@ -119,10 +119,11 @@ References:
 
 ```sh
 make init      # create venv, install CadQuery
-make build     # generate STEP + DXF files
-make mockup    # generate nameplate mockup PNG
-make artwork   # generate paint artwork SVGs
+make all       # generate everything (STEP, DXF, PNG, SVG)
 ```
+
+Individual targets: `make build` (STEP + DXF), `make mockup` (PNG),
+`make artwork` (paint SVGs).
 
 Run `make help` to see all targets.
 
@@ -162,7 +163,7 @@ REAR_THICK = 2.56       # .100" 6061 black anodized
 STEP_WIDTH = 5.75       # lip width from outer edge
 ```
 
-Then re-run `make build`.
+Then re-run `make all`.
 
 ## License
 
