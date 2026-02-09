@@ -557,13 +557,14 @@ def main():
                      color=STAINLESS_BRIGHT)
     draw_spaced_text(ax2, "fatif", PAINT_CX, PAINT_CY, paint_h_mm=PAINT_NARROW_H,
                      color=STAINLESS_BRIGHT)
-    # Bottom clip text: "GOWLAND" in Futura Light, full view and detail
+    # Bottom clip text: "GOWLAND" in Futura Light, 5% shorter with wider spacing
+    _gow_h = PAINT_NARROW_H * 0.95
     draw_spaced_text(ax1, "GOWLAND", BOT_PAINT_CX, BOT_PAINT_CY,
-                     paint_h_mm=PAINT_NARROW_H, color=STAINLESS_BRIGHT,
-                     font_prop=futura_light)
+                     paint_h_mm=_gow_h, color=STAINLESS_BRIGHT,
+                     font_prop=futura_light, spacing_em=0.62)
     draw_spaced_text(ax3, "GOWLAND", BOT_PAINT_CX, BOT_PAINT_CY,
-                     paint_h_mm=PAINT_NARROW_H, color=STAINLESS_BRIGHT,
-                     font_prop=futura_light)
+                     paint_h_mm=_gow_h, color=STAINLESS_BRIGHT,
+                     font_prop=futura_light, spacing_em=0.62)
 
     out = "fatif_nameplate_mockup.png"
     fig.savefig(out, dpi=SAVE_DPI, facecolor="white")
