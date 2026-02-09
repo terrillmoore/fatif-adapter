@@ -73,9 +73,9 @@ SLOT_WIDTH = 3.4
 SLOT_ANGLE = 135.0
 
 # Slot clearance: bare-metal racetrack around each slot hole
-# ~1mm margin all around, matching the paint edge inset (Crown Graphic style)
+# Generous margin so the track reads as a continuous oval (Crown Graphic style)
 # Screw head is larger and sits on top of the paint — racetrack is aesthetic only
-SLOT_CLEAR_MARGIN = 1.0   # uniform margin around slot hole
+SLOT_CLEAR_MARGIN = 2.5   # uniform margin around slot hole
 
 # Output
 SAVE_DPI = 200
@@ -121,20 +121,35 @@ def rounded_square_path(cx, cy, size, r):
 
 
 def stadium_points(cx, cy, half_l, half_w, angle_deg, n_arc=16):
-    """Return (xs, ys) outline of a stadium shape (slot clearance zone)."""
+    """Return (xs, ys) outline of a stadium (rect with semicircular end caps).
+
+    half_l: half the overall length (center to tip of end cap)
+    half_w: half the width perpendicular to the long axis (= end cap radius)
+    angle_deg: rotation of the long axis
+    """
     angle_rad = np.radians(angle_deg)
-    dx, dy = np.cos(angle_rad), np.sin(angle_rad)
-    nx, ny = -dy, dx
+    ax_v = np.array([np.cos(angle_rad), np.sin(angle_rad)])   # along slot
+    perp = np.array([-np.sin(angle_rad), np.cos(angle_rad)])  # perpendicular
+    center = np.array([cx, cy])
+
+    # Straight section half-length (end caps eat into overall length)
+    shl = max(half_l - half_w, 0.0)
+
     pts = []
+    # Right end cap: semicircle from +perp side, through +axis tip, to -perp side
+    rc = center + shl * ax_v
+    angle_perp = angle_rad + np.pi / 2
     for i in range(n_arc + 1):
-        theta = np.pi / 2 + np.pi * i / n_arc
-        pts.append((cx + half_l * dx + half_w * (nx * np.cos(theta) + dx * np.sin(theta)),
-                     cy + half_l * dy + half_w * (ny * np.cos(theta) + dy * np.sin(theta))))
+        theta = angle_perp - np.pi * i / n_arc
+        pts.append(rc + half_w * np.array([np.cos(theta), np.sin(theta)]))
+
+    # Left end cap: semicircle from -perp side, through -axis tip, to +perp side
+    lc = center - shl * ax_v
     for i in range(n_arc + 1):
-        theta = -np.pi / 2 + np.pi * i / n_arc
-        pts.append((cx - half_l * dx + half_w * (nx * np.cos(theta) + dx * np.sin(theta)),
-                     cy - half_l * dy + half_w * (ny * np.cos(theta) + dy * np.sin(theta))))
-    pts.append(pts[0])
+        theta = angle_perp - np.pi - np.pi * i / n_arc
+        pts.append(lc + half_w * np.array([np.cos(theta), np.sin(theta)]))
+
+    pts.append(pts[0])  # close
     return [p[0] for p in pts], [p[1] for p in pts]
 
 
@@ -255,8 +270,7 @@ def draw_paint_fill(ax, edgecolor="none", lw=0, **kwargs):
     clear_half_w = SLOT_WIDTH / 2 + SLOT_CLEAR_MARGIN
     for sx in [-25, 25]:
         xs, ys = stadium_points(sx, 74, clear_half_l, clear_half_w, SLOT_ANGLE)
-        ax.fill(xs, ys, color=STAINLESS, edgecolor=STAINLESS_EDGE,
-                lw=0.3, zorder=8)
+        ax.fill(xs, ys, color=STAINLESS, edgecolor="none", zorder=8)
 
 
 def get_px_per_mm(ax):
