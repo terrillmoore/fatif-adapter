@@ -131,6 +131,11 @@ _left_bot_x = _bend_left_x(_pe_bot_wide)
 
 PAINT_NARROW_H = _pe_top - _pe_bot_narrow
 
+# Bottom clip paint geometry — simple rounded rectangle (no taper, no bend line)
+BOT_PAINT_CX = 0.0
+BOT_PAINT_CY = (bot_inner_y + bot_outer_y) / 2   # -72.5
+BOT_PAINT_W = CLIP_BAR_LENGTH - 2 * PAINT_INSET   # 88mm
+BOT_PAINT_H = BOT_CLIP_WIDTH - 2 * PAINT_INSET    # 8mm
 # Slot clearance
 SLOT_CLEAR_MARGIN = 1.0
 
@@ -142,10 +147,12 @@ SAVE_DPI = 200
 # ---------------------------------------------------------------------------
 FUTURA_PATH = "/System/Library/Fonts/Supplemental/Futura.ttc"
 try:
-    futura_prop = fm.FontProperties(fname=FUTURA_PATH, weight="medium")
-    fm.findfont(futura_prop)
+    futura_medium = fm.FontProperties(fname=FUTURA_PATH, weight="medium")
+    futura_light = fm.FontProperties(fname=FUTURA_PATH, weight="light")
+    fm.findfont(futura_medium)
 except Exception:
-    futura_prop = fm.FontProperties(family="sans-serif", weight="medium")
+    futura_medium = fm.FontProperties(family="sans-serif", weight="medium")
+    futura_light = fm.FontProperties(family="sans-serif", weight="light")
     print("Warning: Futura not found, falling back to sans-serif")
 
 
@@ -314,14 +321,25 @@ def draw_paint_fill(ax, edgecolor="none", lw=0, **kwargs):
         ax.fill(xs, ys, color=STAINLESS, edgecolor="none", zorder=8)
 
 
+def draw_bot_paint_fill(ax, edgecolor="none", lw=0, **kwargs):
+    """Draw the bottom clip paint area with rounded corners. No screw clearance — black screws."""
+    path = rounded_rect_path(BOT_PAINT_CX, BOT_PAINT_CY, BOT_PAINT_W, BOT_PAINT_H,
+                             PAINT_CORNER_R)
+    ax.add_patch(mpatches.PathPatch(
+        path, facecolor=PAINT_BLACK, edgecolor=edgecolor, lw=lw, zorder=7, **kwargs))
+
+
 def get_px_per_mm(ax):
     d0 = ax.transData.transform((0, 0))
     d1 = ax.transData.transform((1, 0))
     return d1[0] - d0[0]
 
 
-def draw_spaced_text(ax, text, cx, cy, paint_h_mm, color, spacing_em=0.5):
+def draw_spaced_text(ax, text, cx, cy, paint_h_mm, color, spacing_em=0.5,
+                     font_prop=None):
     """Draw 'text' in Futura centered in a paint area at (cx, cy)."""
+    if font_prop is None:
+        font_prop = futura_medium
     fig = ax.get_figure()
     fig_dpi = fig.dpi
     px_per_mm = get_px_per_mm(ax)
@@ -363,7 +381,7 @@ def draw_spaced_text(ax, text, cx, cy, paint_h_mm, color, spacing_em=0.5):
     total_w = sum(char_w) + gap * (len(text) - 1)
     x = cx - total_w / 2
     for ch, w in zip(text, char_w):
-        ax.text(x + w / 2, baseline_y, ch, fontproperties=futura_prop,
+        ax.text(x + w / 2, baseline_y, ch, fontproperties=font_prop,
                 fontsize=fontsize_pts, color=color, ha="center", va="baseline",
                 zorder=10)
         x += w + gap
@@ -415,6 +433,9 @@ def draw_full_view_geom(ax):
 
     # Bottom clip (with corner radii)
     _draw_clip(ax, BOT_CLIP_VERTS, CLIP_CORNER_R, STAINLESS_EDGE, 1.0, 5)
+
+    # Bottom clip paint fill
+    draw_bot_paint_fill(ax)
 
     # Screws
     for sx, sy in ASSY_SCREWS:
@@ -481,24 +502,68 @@ def draw_detail_geom(ax):
         sp.set_visible(False)
 
 
+def draw_bot_detail_geom(ax):
+    ax.set_aspect("equal")
+    ax.set_xlim(-52, 52)
+    ax.set_ylim(-82, -64)
+    ax.set_facecolor("#F5F5F0")
+    ax.set_title("Bottom Clip \u2014 Nameplate Detail (4\u00d7 zoom)", fontsize=11,
+                 fontweight="bold", pad=8)
+
+    # Bottom clip with corner radii
+    _draw_clip(ax, BOT_CLIP_VERTS, CLIP_CORNER_R, STAINLESS_EDGE, 1.5, 2)
+
+    # Paint fill
+    draw_bot_paint_fill(ax, edgecolor="#444444", lw=0.8)
+
+    # Screw heads
+    for sx, sy in BOT_CLIP_SCREWS:
+        ax.plot(sx, sy, "o", color=SCREW_COLOR, markersize=5, zorder=9)
+        ax.plot(sx, sy, "+", color="#333333", markersize=4, markeredgewidth=0.8, zorder=9)
+
+    # Dimension annotations
+    ax.text(0, BOT_PAINT_CY + BOT_PAINT_H / 2 + 1.5, f"{PAINT_INSET:.0f}mm inset",
+            fontsize=4.5, ha="center", color="#888888", style="italic")
+    cw_y = -81.0
+    ax.annotate("", xy=(45, cw_y), xytext=(-45, cw_y),
+                arrowprops=dict(arrowstyle="<->", color="#4477AA", lw=0.8))
+    ax.text(0, cw_y - 1.0, "90mm (clip length)", fontsize=5, ha="center", color="#4477AA")
+
+    ax.set_xticks([])
+    ax.set_yticks([])
+    for sp in ax.spines.values():
+        sp.set_visible(False)
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
 def main():
-    fig = plt.figure(figsize=(10, 14), dpi=SAVE_DPI, facecolor="white")
+    fig = plt.figure(figsize=(10, 18), dpi=SAVE_DPI, facecolor="white")
 
-    ax1 = fig.add_axes([0.05, 0.42, 0.90, 0.55])
+    ax1 = fig.add_axes([0.05, 0.50, 0.90, 0.47])
     draw_full_view_geom(ax1)
 
-    ax2 = fig.add_axes([0.05, 0.02, 0.90, 0.38])
+    ax2 = fig.add_axes([0.05, 0.26, 0.90, 0.22])
     draw_detail_geom(ax2)
+
+    ax3 = fig.add_axes([0.05, 0.02, 0.90, 0.22])
+    draw_bot_detail_geom(ax3)
 
     fig.canvas.draw()
 
+    # Top clip text: "fatif" in both full view and detail
     draw_spaced_text(ax1, "fatif", PAINT_CX, PAINT_CY, paint_h_mm=PAINT_NARROW_H,
                      color=STAINLESS_BRIGHT)
     draw_spaced_text(ax2, "fatif", PAINT_CX, PAINT_CY, paint_h_mm=PAINT_NARROW_H,
                      color=STAINLESS_BRIGHT)
+    # Bottom clip text: "GOWLAND" in Futura Light, full view and detail
+    draw_spaced_text(ax1, "GOWLAND", BOT_PAINT_CX, BOT_PAINT_CY,
+                     paint_h_mm=PAINT_NARROW_H, color=STAINLESS_BRIGHT,
+                     font_prop=futura_light)
+    draw_spaced_text(ax3, "GOWLAND", BOT_PAINT_CX, BOT_PAINT_CY,
+                     paint_h_mm=PAINT_NARROW_H, color=STAINLESS_BRIGHT,
+                     font_prop=futura_light)
 
     out = "fatif_nameplate_mockup.png"
     fig.savefig(out, dpi=SAVE_DPI, facecolor="white")
