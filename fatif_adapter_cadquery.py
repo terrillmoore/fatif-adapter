@@ -181,13 +181,20 @@ BOTTOM_CLIP_SCREW_POSITIONS = [
     ( CLIP_SCREW_X_SPACING / 2, -BOT_CLIP_SCREW_Y),
 ]
 
-# Top clip screws: 2 positions at +Y, each centered in its wide end when closed.
-# X_adapter = wide_end_center + _closed_dx  (so screw - dx = center in clip frame)
+# Top clip screws: 2 positions at +Y.
+# Adapter screw holes at wide end centers so clip is centered when fully closed.
+# Clip slots are offset from these by _closed_dx in clip-local coords.
 _left_wide_cx = -(CLIP_BAR_LENGTH / 2 + TOP_CLIP_TAPER_OUTER) / 2   # -32.5
 _right_wide_cx = (TOP_CLIP_TAPER_OUTER + CLIP_BAR_LENGTH / 2) / 2   # +32.5
 TOP_CLIP_SCREW_POSITIONS = [
-    (_left_wide_cx + _closed_dx, TOP_CLIP_SCREW_Y),    # -X screw: -30.52
-    (_right_wide_cx + _closed_dx, TOP_CLIP_SCREW_Y),   # +X screw: +34.48
+    (_left_wide_cx, TOP_CLIP_SCREW_Y),     # -X screw: -32.5
+    (_right_wide_cx, TOP_CLIP_SCREW_Y),    # +X screw: +32.5
+]
+# Clip slot centers (clip-local, relative to clip body center at X=0):
+# When closed, clip body is centered, screws sit at +_closed_dx from slot center.
+TOP_CLIP_SLOT_POSITIONS = [
+    (_left_wide_cx + _closed_dx, TOP_CLIP_SCREW_Y),    # -30.52
+    (_right_wide_cx + _closed_dx, TOP_CLIP_SCREW_Y),   # +34.48
 ]
 
 ALL_SCREW_POSITIONS = (
@@ -421,7 +428,8 @@ for fx, fy in _body_fillet_pts:
     )
 
 # 135° cam slots (push -X to open/retract from board, gravity closes)
-for (x, y) in TOP_CLIP_SCREW_POSITIONS:
+# Use slot positions (clip-local), not adapter screw positions.
+for (x, y) in TOP_CLIP_SLOT_POSITIONS:
     slot = (
         cq.Workplane("XY")
         .workplane(offset=FRONT_Z_TOP - 1)
@@ -623,8 +631,8 @@ for name, part in individual_parts.items():
                 .edges(cq.selectors.NearestToPointSelector((fx, fy, z_mid)))
                 .fillet(cr)
             )
-        # Cam slots at clip-relative positions (screw Y relative to inner edge)
-        for (sx, sy) in TOP_CLIP_SCREW_POSITIONS:
+        # Cam slots at clip-relative positions (slot Y relative to inner edge)
+        for (sx, sy) in TOP_CLIP_SLOT_POSITIONS:
             rel_y = sy - top_inner_wide  # screw Y relative to wide inner edge
             feature = (
                 cq.Workplane("XY").workplane(offset=-1)

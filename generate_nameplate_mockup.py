@@ -47,27 +47,22 @@ SLOT_ANGLE = 135.0
 BOT_CLIP_WIDTH = 10.0
 
 # Top clip in CLOSED (gravity) position:
-# Closed = screw at +X,−Y end of 135° slot → clip shifts +dx, −dy
+# Adapter screw holes are at wide end centers, so clip body is centered (X=0)
+# when fully closed.  Clip shifts +dx along X, -dy along Y from open to closed.
 _half_travel = (SLOT_LENGTH - SLOT_WIDTH) / 2   # 2.8mm along slot
 _closed_dx = _half_travel / math.sqrt(2)         # ≈ +1.98mm
 _closed_dy = -_half_travel / math.sqrt(2)        # ≈ −1.98mm
 
-# Top clip coordinates (closed position)
+# Top clip coordinates (closed position — clip centered at X=0)
 _top_outer_y = HALF_GOWLAND - CLIP_OVERLAP + TOP_CLIP_WIDE + _closed_dy  # 81.5 - 1.98 ≈ 79.52
 _top_inner_wide = _top_outer_y - TOP_CLIP_WIDE                            # ≈ 65.52
 _top_inner_narrow = _top_outer_y - TOP_CLIP_NARROW                        # ≈ 71.52
 _hb = CLIP_BAR_LENGTH / 2                                                 # 45
-_hb_shifted = _hb - _closed_dx                                            # 45 - 1.98 ≈ 43.02
 
 # Top clip vertices in closed position (body outline with chamfer at upper-left)
-# Bend line from A to B: A on outer edge, B on left edge
-_tab_ax = -_hb_shifted + TAB_BEND_RUN + _closed_dx  # ≈ -33 + 1.98 ≈ -31.02...
-# Actually: in closed position, clip is shifted (+dx, +dy) from neutral.
-# Neutral clip body spans X=[-45, 45], Y=[67.5, 81.5].
-# Closed: X=[-45+dx, 45+dx], Y=[67.5+dy, 81.5+dy].
-# Let me just compute from the shifted values:
-_cx = _closed_dx   # clip center X offset
-_cy = _closed_dy   # clip center Y offset
+# Clip is centered (X=0) when closed; only Y shifts by _closed_dy.
+_cx = 0            # clip centered when closed
+_cy = _closed_dy   # clip shifts -Y when closed
 
 TOP_CLIP_VERTS = [
     (-45 + _cx, 67.5 + _cy),    # lower-left
@@ -89,11 +84,10 @@ BOT_CLIP_VERTS = [
     (45, bot_inner_y), (-45, bot_inner_y),
 ]
 
-# Screw positions
-# Top clip screws: each centered in its wide end when closed
+# Screw positions (adapter holes at wide end centers — clip centered when closed)
 _left_wide_cx = -(CLIP_BAR_LENGTH / 2 + 20) / 2   # -32.5
 _right_wide_cx = (20 + CLIP_BAR_LENGTH / 2) / 2    # +32.5
-TOP_CLIP_SCREWS = [(_left_wide_cx + _closed_dx, 74), (_right_wide_cx + _closed_dx, 74)]
+TOP_CLIP_SCREWS = [(_left_wide_cx, 74), (_right_wide_cx, 74)]
 BOT_CLIP_SCREWS = [(-25, -72.5), (25, -72.5)]
 ASSY_SCREWS = [(-74.75, 0), (74.75, 0)]
 
