@@ -450,6 +450,22 @@ tab = (
 top_clip_solid = top_clip.val().fuse(tab.val())
 top_clip = cq.Workplane("XY").newObject([top_clip_solid])
 
+# Fillet tab outer corners (A' and B') in 3D.
+# These are the short edges at the top of the tab, running along the
+# tab's thickness direction (normal = (-1/√2, 1/√2, 0)).
+# Edge midpoints: corner position + half thickness along normal.
+_half_norm = CLIP_THICK / (2 * s2)
+_tab_corner_pts = [
+    (tab_ax - _half_norm, top_outer_y + _half_norm, z_top + TAB_HEIGHT),   # A'
+    (-hb - _half_norm, tab_by + _half_norm, z_top + TAB_HEIGHT),           # B'
+]
+for pt in _tab_corner_pts:
+    top_clip = (
+        top_clip.edges()
+        .edges(cq.selectors.NearestToPointSelector(pt))
+        .fillet(cr)
+    )
+
 
 # ================================================================
 # PART 6: ASSEMBLY (color-coded visualization)
