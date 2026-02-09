@@ -10,3 +10,6 @@ __pycache__/
 
 # Generated mockup (regenerate via: python generate_nameplate_mockup.py)
 fatif_nameplate_mockup.png
+
+# Generated paint artwork (regenerate via: python generate_paint_artwork.py)
+*_paint.svg

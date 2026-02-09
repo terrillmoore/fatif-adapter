@@ -28,14 +28,50 @@ Board retention uses a Cambo / Crown Graphic style mechanism:
 
 | Clip | Material | Size | Features |
 |------|----------|------|----------|
-| Bottom (fixed) | .060" 304 SS (1.52mm) | 90mm × 10mm | Simple rectangular bar, 2x M3 pan head screws, 3.5mm board overlap |
-| Top (sliding) | .060" 304 SS (1.52mm) | 90mm dog-bone + 2x 8mm tabs | 14mm wide at ends / 8mm narrow in middle, 135° cam slots, bent tabs |
+| Bottom (fixed) | .060" 304 SS (1.52mm) | 90mm × 10mm | Simple rectangular bar, R2 corners, 2.0mm board overlap |
+| Top (sliding) | .060" 304 SS (1.52mm) | 90mm dog-bone, R2 corners | 14mm wide at ends / 8mm narrow in middle, 135° cam slots, single 45° rectangular tab (8mm tall) at -X end |
 
 **Operation:** Push the top clip tab toward -X to retract it from the board
 (cam slots convert lateral force to vertical retraction). Tilt the board in
 under the fixed bottom clip, release the top clip, and gravity returns it
 to the closed position — no springs needed. The cam slots provide 5.6mm of
 travel, yielding ~4.0mm of Y retraction from the board edge.
+
+**Clip screws:** Adapter screw holes are at the center of each wide end
+(X = ±32.5, Y = 74, spacing 65mm) so the top clip body is centered on the
+adapter when in the gravity/closed position.
+
+### Nameplate paint treatment
+
+Both clips have painted nameplates — matte black paint with cutout letters
+(bare 304 SS shows through):
+
+| Clip | Text | Font | Spacing | Paint area |
+|------|------|------|---------|------------|
+| Top | "fatif" (lowercase) | Futura Medium | 0.5em | Follows dog-bone profile, 1mm inset, with slot clearance cutouts |
+| Bottom | "GOWLAND" (uppercase) | Futura Light | 0.62em | 88mm × 8mm rounded rect, 1mm inset, no screw clearance (black screws) |
+
+Text height is ~4mm cap height for both. The bottom clip uses Futura Light
+to better match the engraved lettering on original Gowland front standards.
+
+**Fabrication options:**
+1. Paint entire clip, then fiber-laser the letter outlines off (paint + laser etch)
+2. Vinyl stencil with letter cutouts, spray matte black, peel
+3. Silk screen (traditional method)
+
+Paint artwork SVGs (`make artwork`) provide vector outlines for any of these
+methods.
+
+### Hardware
+
+| Qty | Fastener | Length | Use | Notes |
+|-----|----------|--------|-----|-------|
+| 2 | M3 flat head socket cap screw (ISO 10642), stainless | M3×4 | Assembly screws at (±74.75, 0) | Countersunk into front sheet; ~1.6mm thread engagement in tapped rear |
+| 2 | M3 pan head screw (DIN 7985), stainless | M3×6 | Top clip screws at (±32.5, 74) | Through clip + front + middle, ~2.1mm into tapped rear |
+| 2 | M3 pan head screw (DIN 7985), **black oxide** | M3×6 | Bottom clip screws at (±25, -72.5) | Same stack; black to blend with painted clip |
+
+All 6 screws laminate through all three sheets into tapped holes in the rear
+sheet (M3×0.5, tap drill 2.5mm).
 
 ### Fabrication notes
 
@@ -44,8 +80,9 @@ travel, yielding ~4.0mm of Y retraction from the board edge.
   alternative for 304 SS clips (also offers painting for logo application).
 - **Deburring:** Specify deburring on all parts, especially clip edges
   that will be handled during board changes.
-- **Clip DXFs** show flat patterns (pre-bend). Bend tabs up 90° at each end
-  of the top clip.
+- **Clip DXFs** show flat patterns (pre-bend). The top clip has a single
+  45° rectangular tab at the upper-left corner; bend 90° up along the
+  diagonal bend line.
 - **Tapping:** Rear sheet M3 holes are tap drill size (2.5mm). Specify M3×0.5
   tapping, or tap by hand after receiving parts.
 
@@ -81,8 +118,10 @@ References:
 ## Quick Start
 
 ```sh
-make init    # create venv, install CadQuery
-make build   # generate STEP + DXF files
+make init      # create venv, install CadQuery
+make build     # generate STEP + DXF files
+make mockup    # generate nameplate mockup PNG
+make artwork   # generate paint artwork SVGs
 ```
 
 Run `make help` to see all targets.
@@ -101,9 +140,12 @@ Everything else is installed automatically by `make init`.
 | `fatif_front_sheet.step/.dxf` | Front sheet with cutout and screw holes |
 | `fatif_middle_sheet.step/.dxf` | Middle light-seal sheet with bore |
 | `fatif_rear_sheet.step/.dxf` | Rear sheet with bore and tapped holes |
-| `fatif_bottom_clip.step/.dxf` | Fixed bottom retention clip |
-| `fatif_top_clip.step/.dxf` | Sliding top retention clip (with finger tab) |
+| `fatif_bottom_clip.step/.dxf` | Fixed bottom retention clip (flat pattern) |
+| `fatif_top_clip.step/.dxf` | Sliding top retention clip with tab (flat pattern) |
 | `fatif_assembly.step` | Combined assembly for visualization |
+| `fatif_nameplate_mockup.png` | Three-panel mockup showing both nameplates |
+| `fatif_top_clip_paint.svg` | Paint artwork for top clip ("fatif") |
+| `fatif_bottom_clip_paint.svg` | Paint artwork for bottom clip ("GOWLAND") |
 
 ### Adjusting Dimensions
 

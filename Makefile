@@ -1,4 +1,4 @@
-.PHONY: help init build pdf clean
+.PHONY: help init build mockup artwork pdf clean
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -23,8 +23,11 @@ build: $(VENV)/.installed ## Generate STEP and DXF files
 mockup: $(VENV)/.installed ## Generate nameplate mockup PNG
 	$(PYTHON) generate_nameplate_mockup.py
 
+artwork: $(VENV)/.installed ## Generate paint artwork SVGs
+	$(PYTHON) generate_paint_artwork.py
+
 pdf: build ## Convert DXF files to PDF for viewing
 	$(PYTHON) dxf2pdf.py *.dxf
 
-clean: ## Remove generated STEP, STL, DXF, PDF, and PNG files
-	rm -f *.step *.stl *.dxf *.pdf fatif_nameplate_mockup.png
+clean: ## Remove generated STEP, STL, DXF, PDF, PNG, and SVG files
+	rm -f *.step *.stl *.dxf *.pdf fatif_nameplate_mockup.png *_paint.svg
