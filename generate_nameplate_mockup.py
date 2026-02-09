@@ -72,10 +72,10 @@ SLOT_LENGTH = 9.0
 SLOT_WIDTH = 3.4
 SLOT_ANGLE = 135.0
 
-# Slot clearance zones: stadium shapes around each cam slot
-# M3 pan head ~5.5mm dia; modest clearance matching Crown Graphic
-SLOT_CLEAR_HALF_L = 5.2   # half-length along slot axis
-SLOT_CLEAR_HALF_W = 2.8   # half-width perpendicular to slot
+# Slot clearance: bare-metal racetrack around each slot hole
+# ~1mm margin all around, matching the paint edge inset (Crown Graphic style)
+# Screw head is larger and sits on top of the paint — racetrack is aesthetic only
+SLOT_CLEAR_MARGIN = 1.0   # uniform margin around slot hole
 
 # Output
 SAVE_DPI = 200
@@ -250,12 +250,13 @@ def draw_paint_fill(ax, edgecolor="none", lw=0, **kwargs):
     ax.fill([p[0] for p in outline], [p[1] for p in outline],
             color=PAINT_BLACK, edgecolor=edgecolor, lw=lw, zorder=7, **kwargs)
 
-    # Slot clearance zones: unpainted stadiums around each cam slot
+    # Slot clearance racetracks: uniform margin around each slot hole
+    clear_half_l = SLOT_LENGTH / 2 + SLOT_CLEAR_MARGIN
+    clear_half_w = SLOT_WIDTH / 2 + SLOT_CLEAR_MARGIN
     for sx in [-25, 25]:
-        xs, ys = stadium_points(sx, 74, SLOT_CLEAR_HALF_L, SLOT_CLEAR_HALF_W,
-                                SLOT_ANGLE)
+        xs, ys = stadium_points(sx, 74, clear_half_l, clear_half_w, SLOT_ANGLE)
         ax.fill(xs, ys, color=STAINLESS, edgecolor=STAINLESS_EDGE,
-                lw=0.4, zorder=8)
+                lw=0.3, zorder=8)
 
 
 def get_px_per_mm(ax):
