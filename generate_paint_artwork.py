@@ -387,12 +387,6 @@ def generate_top_clip():
     # Paint mask with slot clearances and text cutouts
     svg += svg_path(compound_d, fill="black", fill_rule="evenodd", stroke="none")
 
-    # Slot holes (reference, actual slot shape)
-    for sx in SLOT_XS:
-        pts = stadium_pts(sx, SLOT_Y, SL / 2, SW / 2, SA_DEG)
-        svg += svg_path(pts_to_svg_d(pts), fill="none", stroke="#cccccc",
-                        stroke_width="0.1")
-
     # Bend line (reference)
     bend_a = (-HB + BEND_RUN, TOP_WIDE)     # (-35, 14)
     bend_b = (-HB, TOP_WIDE - BEND_RUN)     # (-45, 4)
