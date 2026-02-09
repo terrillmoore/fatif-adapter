@@ -378,8 +378,6 @@ tab_ax = -hb + TAB_BEND_RUN                # A: X on outer edge
 tab_by = top_outer_y - TAB_BEND_RUN        # B: Y on left edge
 
 # Dog-bone profile with 45° chamfer at upper-left (tab material removed).
-# Corner radii applied via DXF flat pattern (what gets laser cut).
-# 3D model uses sharp corners for robustness.
 top_clip = (
     cq.Workplane("XY")
     .workplane(offset=FRONT_Z_TOP)
@@ -395,6 +393,25 @@ top_clip = (
     .close()                              # left edge: B → start
     .extrude(CLIP_THICK)
 )
+
+# Fillet body corners (before slot cutting and tab fusion).
+# All 7 body corners get R2; bend endpoints A and B stay sharp.
+_z_mid_clip = FRONT_Z_TOP + CLIP_THICK / 2
+_body_fillet_pts = [
+    (-hb, top_inner_wide),               # lower-left body
+    (-to_, top_inner_wide),              # left taper, bottom
+    (-ti, top_inner_narrow),             # left taper, narrow start
+    ( ti, top_inner_narrow),             # right taper, narrow end
+    ( to_, top_inner_wide),              # right taper, bottom
+    ( hb, top_inner_wide),               # lower-right body
+    ( hb, top_outer_y),                  # upper-right body
+]
+for fx, fy in _body_fillet_pts:
+    top_clip = (
+        top_clip.edges("|Z")
+        .edges(cq.selectors.NearestToPointSelector((fx, fy, _z_mid_clip)))
+        .fillet(cr)
+    )
 
 # 135° cam slots (push -X to open/retract from board, gravity closes)
 for (x, y) in TOP_CLIP_SCREW_POSITIONS:
@@ -563,14 +580,14 @@ for name, part in individual_parts.items():
             .close()
             .extrude(CLIP_THICK)
         )
-        # Fillet the 6 corners that should be radiused:
-        # 4 body corners + 2 tab outer corners (A' and B')
-        # Leaves dog-bone taper transitions and bend endpoints sharp.
-        # Corners to fillet: 3 body rectangular corners + 2 tab outer corners.
-        # Upper-left original corner (-45, 14) doesn't exist (replaced by tab).
-        # Lower-left (-45, 0) has 4mm to bend endpoint B (-45, 4) — room for R2.
+        # Fillet all corners: 3 body + 4 taper + 2 tab outer = 9 total.
+        # Leaves bend endpoints A and B sharp (tab attachment).
         fillet_pts = [
             (b_lx, 0),                          # lower-left body
+            (-to_, 0),                           # left taper, bottom
+            (-ti, dog_bone_inset),               # left taper, narrow start
+            ( ti, dog_bone_inset),               # right taper, narrow end
+            ( to_, 0),                           # right taper, bottom
             (hb, 0),                             # lower-right body
             (hb, TOP_CLIP_WIDE),                 # upper-right body
             (ap_x, ap_y),                        # tab corner A'

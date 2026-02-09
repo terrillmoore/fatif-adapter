@@ -113,23 +113,28 @@ _bend_offset_x = PAINT_TAB_MARGIN * math.sqrt(2)
 
 # Paint boundary points (in absolute coords, closed position)
 _pe_right = 45 + _cx - _pi          # right edge of paint
-_top_paint = 81.5 + _cy - _pi       # top of paint
-_bot_wide = 67.5 + _cy + _pi        # bottom of wide section paint
-_bot_narrow = 73.5 + _cy + _pi      # bottom of narrow section paint
-_taper_outer_x = 20 + _cx + _pi
-_taper_inner_x = 15 + _cx + _pi
+_pe_top = 81.5 + _cy - _pi          # top of paint
+_pe_bot_wide = 67.5 + _cy + _pi     # bottom of wide section paint
+_pe_bot_narrow = 73.5 + _cy + _pi   # bottom of narrow section paint
+
+# Taper X positions — compute left/right separately (sign of _cx matters)
+_pe_lt_outer = -20 + _cx             # left taper, outer (Y inset provides margin)
+_pe_lt_inner = -15 + _cx             # left taper, narrow
+_pe_rt_inner = 15 + _cx              # right taper, narrow
+_pe_rt_outer = 20 + _cx              # right taper, outer
 
 # Left edge follows offset bend line at each Y level
-# In clip coords: X_bend = Y - 114.5 + bend_offset_x
-# In absolute: X_bend = (Y - _cy) - 114.5 + bend_offset_x + _cx
+# In neutral clip coords: X_bend = Y - 116.5
+# Offset: X_paint = Y - 116.5 + bend_offset_x
+# In absolute: X_paint = (Y_abs - _cy) - 116.5 + bend_offset_x + _cx
 def _bend_left_x(y):
     """X of paint left boundary at given Y (follows offset bend line)."""
     return (y - _cy) - 116.5 + _bend_offset_x + _cx
 
-_left_top_x = _bend_left_x(_top_paint)
-_left_bot_x = _bend_left_x(_bot_wide)
+_left_top_x = _bend_left_x(_pe_top)
+_left_bot_x = _bend_left_x(_pe_bot_wide)
 
-PAINT_NARROW_H = _top_paint - _bot_narrow
+PAINT_NARROW_H = _pe_top - _pe_bot_narrow
 
 # Slot clearance
 SLOT_CLEAR_MARGIN = 1.0
@@ -273,28 +278,31 @@ def paint_outline_points():
     Build the paint outline as a smooth polygon with rounded corners.
     Left side follows the offset bend line (parallel to 45° tab bend),
     clamped to clip left boundary + inset where the diagonal would exceed it.
+    Vertices are counterclockwise: bottom inner edge → right → top → left diagonal.
     """
     # Clip left boundary + inset (in closed position)
     _clip_left_x = -_hb + _cx + _pi
     # Y where the diagonal paint edge meets the vertical clip boundary
     _y_diag_meets_vert = _cy + 71.5 + _pi - _bend_offset_x
+    needs_clamp = _left_bot_x < _clip_left_x
 
-    sharp = []
-    if _left_bot_x < _clip_left_x:
-        # Diagonal extends past clip left edge at bottom — add vertical segment
-        sharp.append((_clip_left_x, _bot_wide))        # bottom-left (clamped)
-        sharp.append((_clip_left_x, _y_diag_meets_vert))  # transition to diagonal
+    # Start at left taper, trace counterclockwise
+    sharp = [
+        (_pe_lt_outer, _pe_bot_wide),      # left taper, bottom
+        (_pe_lt_inner, _pe_bot_narrow),    # left taper, narrow
+        (_pe_rt_inner, _pe_bot_narrow),    # right taper, narrow
+        (_pe_rt_outer, _pe_bot_wide),      # right taper, bottom
+        ( _pe_right, _pe_bot_wide),        # bottom-right
+        ( _pe_right, _pe_top),             # top-right
+        (_left_top_x, _pe_top),            # top-left (bend line margin)
+    ]
+    if needs_clamp:
+        # Diagonal extends past clip left edge — add vertical segment
+        sharp.append((_clip_left_x, _y_diag_meets_vert))   # diagonal → vertical
+        sharp.append((_clip_left_x, _pe_bot_wide))          # bottom-left (clamped)
     else:
-        sharp.append((_left_bot_x, _bot_wide))          # bottom-left on diagonal
-    sharp.extend([
-        (-_taper_outer_x, _bot_wide),      # taper start (note: negated for left side)
-        (-_taper_inner_x, _bot_narrow),    # taper to narrow
-        ( _taper_inner_x, _bot_narrow),    # narrow section
-        ( _taper_outer_x, _bot_wide),      # taper back
-        ( _pe_right, _bot_wide),           # bottom-right
-        ( _pe_right, _top_paint),          # top-right
-        (_left_top_x, _top_paint),         # top-left (bend line margin)
-    ])
+        sharp.append((_left_bot_x, _pe_bot_wide))           # bottom-left on diagonal
+    # Closing segment: bottom-left → left taper (horizontal at _pe_bot_wide)
     return _fillet_polygon(sharp, PAINT_CORNER_R)
 
 
@@ -461,7 +469,7 @@ def draw_detail_geom(ax):
         ax.plot(sx, sy, "+", color="#333333", markersize=4, markeredgewidth=0.8, zorder=9)
 
     # Dimension annotations
-    ax.text(-37 + _cx, _top_paint + 1.5, f"{PAINT_INSET:.0f}mm inset", fontsize=4.5,
+    ax.text(-37 + _cx, _pe_top + 1.5, f"{PAINT_INSET:.0f}mm inset", fontsize=4.5,
             ha="center", color="#888888", style="italic")
 
     cw_y = 62.0
@@ -469,7 +477,7 @@ def draw_detail_geom(ax):
                 arrowprops=dict(arrowstyle="<->", color="#4477AA", lw=0.8))
     ax.text(0 + _cx, cw_y - 1.0, "90mm (clip length)", fontsize=5, ha="center", color="#4477AA")
 
-    ax.annotate("8mm\n(narrow)", xy=(0 + _cx, _bot_narrow - 0.5), fontsize=5, ha="center", va="top",
+    ax.annotate("8mm\n(narrow)", xy=(0 + _cx, _pe_bot_narrow - 0.5), fontsize=5, ha="center", va="top",
                 color="#666666", style="italic")
 
     ax.set_xticks([])
