@@ -97,8 +97,9 @@ BOT_CLIP_SCREW_Y = 72.5     # Y offset for bottom clip screws
 TOP_CLIP_SCREW_Y = 74.0     # Y offset for top clip screws
 
 # --- Clips (Cambo / Crown Graphic style) ---
+# Material: 304 stainless steel, .060" (1.52mm)
 CLIP_BAR_LENGTH = 90.0      # flat bar length on adapter face (both clips)
-CLIP_THICK = 2.0            # sheet metal thickness (both clips)
+CLIP_THICK = 1.52           # .060" 304 stainless steel
 CLIP_OVERLAP = 3.5          # overlap onto board edge (both clips)
 TAB_HEIGHT = 8.0            # bent tab height at both ends (both clips)
 
@@ -564,9 +565,10 @@ print(f"    Cam action:   {SLOT_ANGLE:.0f}° slots, {SLOT_LENGTH - SLOT_WIDTH:.1
 print(f"  Clip screws:    2+2 M3 pan head at X spacing {CLIP_SCREW_X_SPACING}mm")
 print(f"    Bottom Y:     ±{BOT_CLIP_SCREW_Y}mm, Top Y: ±{TOP_CLIP_SCREW_Y}mm")
 print(f"  Total screws:   6 (2 assembly + 4 clip, all laminate sheets)")
-print(f"  Materials:      6061-T6 (front/rear), 2024-T3 (middle)")
+print(f"  Materials:      6061-T6 (front/rear), 2024-T3 (middle), "
+      f"304 SS (clips)")
 print(f"  Finishes:       Powder coat (front), bare (middle), "
-      f"black anodize (rear)")
+      f"black anodize (rear), bare (clips)")
 print("=" * 60)
 print("\nFiles ready for SendCutSend upload (STEP for quoting, DXF for cutting)")
 print("Note: Clip DXFs show flat patterns (pre-bend). Bend tabs up 90° at each end.")
