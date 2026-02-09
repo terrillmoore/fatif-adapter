@@ -292,11 +292,6 @@ def generate_bottom_clip():
     # Paint mask with text cutouts
     svg += svg_path(compound_d, fill="black", fill_rule="evenodd", stroke="none")
 
-    # Screw holes (reference)
-    for sx in BOT_SCREW_XS:
-        svg += svg_circle(sx, BOT_SCREW_Y, M3_CLEAR / 2,
-                          fill="none", stroke="#cccccc", stroke_width="0.1")
-
     svg += svg_footer()
 
     path = "fatif_bottom_clip_paint.svg"
