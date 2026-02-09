@@ -78,7 +78,7 @@ SLOT_ANGLE = 135.0
 # Slot clearance: bare-metal racetrack around each slot hole
 # Generous margin so the track reads as a continuous oval (Crown Graphic style)
 # Screw head is larger and sits on top of the paint — racetrack is aesthetic only
-SLOT_CLEAR_MARGIN = 2.5   # uniform margin around slot hole
+SLOT_CLEAR_MARGIN = 1.0   # uniform margin around slot hole (matches paint edge inset)
 
 # Output
 SAVE_DPI = 200

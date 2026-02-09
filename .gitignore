@@ -7,3 +7,6 @@ __pycache__/
 *.stl
 *.dxf
 *.pdf
+
+# Generated mockup (regenerate via: python generate_nameplate_mockup.py)
+fatif_nameplate_mockup.png

@@ -20,8 +20,11 @@ $(VENV)/.installed:
 build: $(VENV)/.installed ## Generate STEP and DXF files
 	$(PYTHON) $(SCRIPT)
 
+mockup: $(VENV)/.installed ## Generate nameplate mockup PNG
+	$(PYTHON) generate_nameplate_mockup.py
+
 pdf: build ## Convert DXF files to PDF for viewing
 	$(PYTHON) dxf2pdf.py *.dxf
 
-clean: ## Remove generated STEP, STL, DXF, and PDF files
-	rm -f *.step *.stl *.dxf *.pdf
+clean: ## Remove generated STEP, STL, DXF, PDF, and PNG files
+	rm -f *.step *.stl *.dxf *.pdf fatif_nameplate_mockup.png
