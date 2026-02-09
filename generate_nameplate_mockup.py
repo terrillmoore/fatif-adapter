@@ -32,15 +32,18 @@ GOWLAND = 139.0
 R_GOWLAND = 3.4
 BORE_DIA = 110.0
 
+# Clip coordinates derived from CadQuery: CLIP_OVERLAP=2.0, HALF_GOWLAND=69.5
+# Top: outer=81.5, inner_wide=67.5, inner_narrow=73.5
+# Bottom: inner=-67.5, outer=-77.5
 TOP_CLIP_VERTS = [
-    (-45, 66), (-20, 66), (-15, 72),
-    (15, 72), (20, 66), (45, 66),
-    (45, 80), (-45, 80),
+    (-45, 67.5), (-20, 67.5), (-15, 73.5),
+    (15, 73.5), (20, 67.5), (45, 67.5),
+    (45, 81.5), (-45, 81.5),
 ]
 
 BOT_CLIP_VERTS = [
-    (-45, -80), (45, -80),
-    (45, -70), (-45, -70),
+    (-45, -77.5), (45, -77.5),
+    (45, -67.5), (-45, -67.5),
 ]
 
 ASSY_SCREWS = [(-74.75, 0), (74.75, 0)]
@@ -48,7 +51,7 @@ TOP_CLIP_SCREWS = [(-25, 74), (25, 74)]
 BOT_CLIP_SCREWS = [(-25, -72.5), (25, -72.5)]
 
 PAINT_CX = 0.0
-PAINT_CY = 76.0  # center of narrow section (for text placement)
+PAINT_CY = 77.5  # center of narrow section (for text placement)
 
 # Paint fill geometry
 PAINT_INSET = 1.0       # mm inset from clip edges
@@ -58,14 +61,14 @@ PAINT_CORNER_R = 2.0    # radius for all paint outline corners
 # Key derived coordinates (inset from clip edges)
 _pe = 45 - PAINT_TAB_MARGIN   # 43 — paint X extent
 _pi = PAINT_INSET
-_top = 80 - _pi               # 79
-_bot_wide = 66 + _pi          # 67
-_bot_narrow = 72 + _pi        # 73
+_top = 81.5 - _pi             # 80.5
+_bot_wide = 67.5 + _pi        # 68.5
+_bot_narrow = 73.5 + _pi      # 74.5
 _taper_outer_x = 20 + _pi     # 21
 _taper_inner_x = 15 + _pi     # 16
 
 # The narrow section height for text sizing
-PAINT_NARROW_H = _top - _bot_narrow  # 79 - 73 = 6mm
+PAINT_NARROW_H = _top - _bot_narrow  # 80.5 - 74.5 = 6mm
 
 # Cam slot parameters
 SLOT_LENGTH = 9.0
@@ -389,9 +392,9 @@ def draw_full_view_geom(ax):
     # Tab indicators
     for sign in [-1, 1]:
         tx = sign * 45
-        ax.plot([tx, tx], [72, 80], color=STAINLESS_EDGE, lw=2.5, zorder=6,
+        ax.plot([tx, tx], [73.5, 81.5], color=STAINLESS_EDGE, lw=2.5, zorder=6,
                 solid_capstyle="butt")
-        ax.annotate("", xy=(tx + sign * 3, 76), xytext=(tx, 76),
+        ax.annotate("", xy=(tx + sign * 3, 77.5), xytext=(tx, 77.5),
                     arrowprops=dict(arrowstyle="->", color=STAINLESS_EDGE, lw=1.0), zorder=6)
 
     # Paint fill (includes slot clearance zones)
@@ -425,7 +428,7 @@ def draw_full_view_geom(ax):
 def draw_detail_geom(ax):
     ax.set_aspect("equal")
     ax.set_xlim(-52, 52)
-    ax.set_ylim(62, 84)
+    ax.set_ylim(63, 86)
     ax.set_facecolor("#F5F5F0")
     ax.set_title("Top Clip \u2014 Nameplate Detail (4\u00d7 zoom)", fontsize=11,
                  fontweight="bold", pad=8)
@@ -436,9 +439,9 @@ def draw_detail_geom(ax):
 
     for sign in [-1, 1]:
         tx = sign * 45
-        ax.plot([tx, tx], [66, 80], color=STAINLESS_EDGE, lw=3, zorder=3,
+        ax.plot([tx, tx], [67.5, 81.5], color=STAINLESS_EDGE, lw=3, zorder=3,
                 solid_capstyle="butt")
-        ax.annotate("tab\n(bend up)", xy=(tx, 73), fontsize=5,
+        ax.annotate("tab\n(bend up)", xy=(tx, 74.5), fontsize=5,
                     ha="center", va="center", color="#666666", zorder=4)
 
     # Paint fill (includes slot clearance zones)
@@ -462,7 +465,7 @@ def draw_detail_geom(ax):
                             alpha=0.9, lw=0.6))
 
     # Paint inset margin
-    ax.text(-37, 80.8, f"{PAINT_INSET:.0f}mm inset", fontsize=4.5,
+    ax.text(-37, 82.3, f"{PAINT_INSET:.0f}mm inset", fontsize=4.5,
             ha="center", color="#888888", style="italic")
 
     # Clip overall length
@@ -472,7 +475,7 @@ def draw_detail_geom(ax):
     ax.text(0, cw_y - 1.2, "90mm (clip length)", fontsize=5, ha="center", color="#4477AA")
 
     # Narrow section label
-    ax.annotate("8mm\n(narrow)", xy=(0, 72.3), fontsize=5, ha="center", va="top",
+    ax.annotate("8mm\n(narrow)", xy=(0, 73.8), fontsize=5, ha="center", va="top",
                 color="#666666", style="italic")
 
     ax.set_xticks([])

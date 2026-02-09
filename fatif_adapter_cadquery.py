@@ -37,10 +37,11 @@ Three-piece laminated approach:
   Total thickness: 1.78 + 0.64 + 2.56 = 4.98mm
 
 Board retention — Cambo / Crown Graphic style clips:
-  Fixed bottom clip: rectangular flat bar, 2 screws, bent tabs at both ends
+  Fixed bottom clip: rectangular flat bar, 2 screws, no tabs
   Sliding top clip: dog-bone profile (wider at slot ends, narrower in
-    middle), 45° cam slots (sliding retracts clip from board), gravity
-    return (no springs), bent tabs at both ends for finger grip
+    middle), 135° cam slots (push -X to open, gravity closes), bent
+    tabs at both ends for finger grip
+  Clip material: .060" 304 stainless steel (1.52mm)
 """
 
 import cadquery as cq
@@ -100,7 +101,7 @@ TOP_CLIP_SCREW_Y = 74.0     # Y offset for top clip screws
 # Material: 304 stainless steel, .060" (1.52mm)
 CLIP_BAR_LENGTH = 90.0      # flat bar length on adapter face (both clips)
 CLIP_THICK = 1.52           # .060" 304 stainless steel
-CLIP_OVERLAP = 3.5          # overlap onto board edge (both clips)
+CLIP_OVERLAP = 2.0          # overlap onto board edge (both clips) — enough to retain, allows angling board in
 TAB_HEIGHT = 8.0            # bent tab height at both ends (both clips)
 
 # Bottom clip: simple rectangular bar
