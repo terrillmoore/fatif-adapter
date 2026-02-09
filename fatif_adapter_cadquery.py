@@ -36,10 +36,11 @@ Three-piece laminated approach:
     2.42mm lip that seats into the Fatif standard spring clips.
   Total thickness: 1.78 + 0.64 + 2.56 = 4.98mm
 
-Board retention — Cambo-style clips:
-  Fixed bottom clip: flat bar mounted below cutout, overlaps board ~3mm
-  Sliding top clip: spring-loaded flat bar with elongated slots,
-    pulled up via finger tab to insert/remove board
+Board retention — Cambo / Crown Graphic style clips:
+  Fixed bottom clip: rectangular flat bar, 2 screws, bent tabs at both ends
+  Sliding top clip: dog-bone profile (wider at slot ends, narrower in
+    middle), 45° cam slots (sliding retracts clip from board), gravity
+    return (no springs), bent tabs at both ends for finger grip
 """
 
 import cadquery as cq
@@ -90,23 +91,34 @@ M3_CSK_DEPTH = 1.2          # countersink depth (< FRONT_THICK)
 #   Band: 69.5 to 80.0mm (10.5mm wide)
 ASSY_SCREW_R = 74.75        # midpoint of overlap band
 
-# Clip screws at top and bottom center
-CLIP_SCREW_X_SPACING = 50.0 # distance between clip screw pair (center to center)
-CLIP_SCREW_Y_OFFSET = 74.75 # Y distance from center for clip screws
+# Clip screws at top and bottom (also laminate all three sheets)
+CLIP_SCREW_X_SPACING = 50.0 # distance between clip screw pair
+BOT_CLIP_SCREW_Y = 72.5     # Y offset for bottom clip screws
+TOP_CLIP_SCREW_Y = 74.0     # Y offset for top clip screws
 
-# --- Clips ---
-CLIP_LENGTH = 139.0         # same as cutout width
-CLIP_WIDTH = 5.0            # bar width (Y direction)
-CLIP_THICK = 2.0            # bar thickness
-CLIP_OVERLAP = 3.0          # how far clip overlaps board edge
+# --- Clips (Cambo / Crown Graphic style) ---
+CLIP_BAR_LENGTH = 90.0      # flat bar length on adapter face (both clips)
+CLIP_THICK = 2.0            # sheet metal thickness (both clips)
+CLIP_OVERLAP = 3.5          # overlap onto board edge (both clips)
+TAB_HEIGHT = 8.0            # bent tab height at both ends (both clips)
 
-# Top clip slots
-SLOT_LENGTH = 7.0           # elongated slot length (allows ~5mm travel)
-SLOT_WIDTH = 3.4            # M3 clearance width
+# Bottom clip: simple rectangular bar
+BOT_CLIP_WIDTH = 10.0       # uniform width
 
-# Top clip finger tab
-TAB_LENGTH = 15.0           # tab extends beyond clip end
-TAB_HEIGHT = 8.0            # bent tab height (90° upward)
+# Top clip: dog-bone profile (Crown Graphic style)
+# Wider at screw/slot ends, narrower in middle (nameplate area).
+# Inner edge (board side) is straight for uniform overlap.
+# Outer edge has the dog-bone taper.
+TOP_CLIP_WIDE = 14.0        # width at ends (accommodates 45° cam slots)
+TOP_CLIP_NARROW = 8.0       # width in middle
+TOP_CLIP_TAPER_INNER = 15.0 # X from center where taper begins
+TOP_CLIP_TAPER_OUTER = 20.0 # X from center where full width begins
+
+# Top clip cam slots (135° = cam action: push tab +X to close,
+# push tab -X to open/retract, gravity return to closed)
+SLOT_LENGTH = 9.0           # slot length
+SLOT_WIDTH = 3.4            # M3 clearance
+SLOT_ANGLE = 135.0          # degrees from X axis
 
 # --- Derived ---
 HALF_BOARD = BOARD_SIZE / 2
@@ -142,25 +154,23 @@ def rounded_rect(wp, size, corner_r):
 # SCREW HOLE POSITIONS
 # ================================================================
 
-# Assembly screws: 4 positions on cardinal axes (not diagonals —
-# diagonals fall inside the front sheet's 139mm cutout).
+# Assembly screws: left and right only.  Top/bottom positions are
+# covered by clip screws, which also laminate all three sheets.
 ASSY_SCREW_POSITIONS = [
     ( ASSY_SCREW_R,  0),   # right
     (-ASSY_SCREW_R,  0),   # left
-    ( 0,  ASSY_SCREW_R),   # top
-    ( 0, -ASSY_SCREW_R),   # bottom
 ]
 
 # Bottom clip screws: 2 positions at -Y
 BOTTOM_CLIP_SCREW_POSITIONS = [
-    (-CLIP_SCREW_X_SPACING / 2, -CLIP_SCREW_Y_OFFSET),
-    ( CLIP_SCREW_X_SPACING / 2, -CLIP_SCREW_Y_OFFSET),
+    (-CLIP_SCREW_X_SPACING / 2, -BOT_CLIP_SCREW_Y),
+    ( CLIP_SCREW_X_SPACING / 2, -BOT_CLIP_SCREW_Y),
 ]
 
 # Top clip screws: 2 positions at +Y
 TOP_CLIP_SCREW_POSITIONS = [
-    (-CLIP_SCREW_X_SPACING / 2, CLIP_SCREW_Y_OFFSET),
-    ( CLIP_SCREW_X_SPACING / 2, CLIP_SCREW_Y_OFFSET),
+    (-CLIP_SCREW_X_SPACING / 2, TOP_CLIP_SCREW_Y),
+    ( CLIP_SCREW_X_SPACING / 2, TOP_CLIP_SCREW_Y),
 ]
 
 ALL_SCREW_POSITIONS = (
@@ -194,7 +204,7 @@ cutout = (
 )
 front_sheet = front_sheet.cut(cutout)
 
-# Clearance holes + countersinks for all screws
+# Clearance holes for all screws
 for (x, y) in ALL_SCREW_POSITIONS:
     hole = (
         cq.Workplane("XY")
@@ -205,6 +215,9 @@ for (x, y) in ALL_SCREW_POSITIONS:
     )
     front_sheet = front_sheet.cut(hole)
 
+# Countersinks only for assembly screws (clip screws use pan heads
+# that sit on top of the clips, not countersunk into the front sheet)
+for (x, y) in ASSY_SCREW_POSITIONS:
     csk = (
         cq.Workplane("XY")
         .workplane(offset=FRONT_Z_TOP - M3_CSK_DEPTH)
@@ -290,17 +303,21 @@ for (x, y) in ALL_SCREW_POSITIONS:
 # PART 4: FIXED BOTTOM CLIP
 # ================================================================
 
-print("  [4/6] Bottom clip: %.0fmm x %.0fmm x %.1fmm"
-      % (CLIP_LENGTH, CLIP_WIDTH, CLIP_THICK))
+# Simple rectangular bar straddling the bottom cutout edge.
+# Inner portion overlaps board by CLIP_OVERLAP; outer portion holds screws.
+bot_inner_y = -(HALF_GOWLAND - CLIP_OVERLAP)        # -66.0 (board side)
+bot_outer_y = bot_inner_y - BOT_CLIP_WIDTH           # -76.0 (away from board)
+bot_center_y = (bot_inner_y + bot_outer_y) / 2       # -71.0
 
-# Clip sits on front face at bottom of cutout
-clip_y_center = -(HALF_GOWLAND + CLIP_WIDTH / 2 - CLIP_OVERLAP)
+print("  [4/6] Bottom clip: %.0fmm bar, %.0fmm wide, %.1fmm thick (fixed, no tabs)"
+      % (CLIP_BAR_LENGTH, BOT_CLIP_WIDTH, CLIP_THICK))
 
+# Simple flat bar — no bent tabs (fixed clip, nothing to grip)
 bottom_clip = (
     cq.Workplane("XY")
     .workplane(offset=FRONT_Z_TOP)
-    .center(0, clip_y_center)
-    .rect(CLIP_LENGTH, CLIP_WIDTH)
+    .center(0, bot_center_y)
+    .rect(CLIP_BAR_LENGTH, BOT_CLIP_WIDTH)
     .extrude(CLIP_THICK)
 )
 
@@ -317,60 +334,85 @@ for (x, y) in BOTTOM_CLIP_SCREW_POSITIONS:
 
 
 # ================================================================
-# PART 5: SLIDING TOP CLIP
+# PART 5: SLIDING TOP CLIP (dog-bone profile, Crown Graphic style)
 # ================================================================
 
-print("  [5/6] Top clip: %.0fmm x %.0fmm x %.1fmm (with slots + tab)"
-      % (CLIP_LENGTH + TAB_LENGTH, CLIP_WIDTH, CLIP_THICK))
+# Outer edge (away from board, +Y) is STRAIGHT.
+# Inner edge (board side, lower Y) has dog-bone profile:
+#   wide at ends = more overlap (board grip at screw locations)
+#   narrow in middle = less overlap (connecting bar / nameplate area)
+# Cam action: 135° slots mean push -X to open, gravity returns to closed.
+top_outer_y = HALF_GOWLAND - CLIP_OVERLAP + TOP_CLIP_WIDE  # 80.0 (straight)
+top_inner_wide = top_outer_y - TOP_CLIP_WIDE                # 66.0 (ends)
+top_inner_narrow = top_outer_y - TOP_CLIP_NARROW            # 72.0 (middle)
+hb = CLIP_BAR_LENGTH / 2                                    # 45.0
+ti = TOP_CLIP_TAPER_INNER                                   # 15.0
+to_ = TOP_CLIP_TAPER_OUTER                                  # 20.0
 
-# Clip sits on front face at top of cutout
-clip_y_center_top = HALF_GOWLAND + CLIP_WIDTH / 2 - CLIP_OVERLAP
+print("  [5/6] Top clip: %.0fmm dog-bone bar + 2x%.0fmm tabs, "
+      "%.0f/%.0fmm wide, %.1fmm thick"
+      % (CLIP_BAR_LENGTH, TAB_HEIGHT, TOP_CLIP_NARROW, TOP_CLIP_WIDE, CLIP_THICK))
+print("         135° cam slots, gravity return (no springs)")
 
-# Main bar (extended by tab length on +X side)
+# Dog-bone profile: straight outer edge (+Y), profiled inner edge
 top_clip = (
     cq.Workplane("XY")
     .workplane(offset=FRONT_Z_TOP)
-    .center(TAB_LENGTH / 2, clip_y_center_top)
-    .rect(CLIP_LENGTH + TAB_LENGTH, CLIP_WIDTH)
+    .moveTo(-hb, top_inner_wide)          # bottom-left (wide, 66)
+    .lineTo(-to_, top_inner_wide)         # taper start
+    .lineTo(-ti, top_inner_narrow)        # taper to narrow (72)
+    .lineTo( ti, top_inner_narrow)        # narrow middle
+    .lineTo( to_, top_inner_wide)         # taper back to wide (66)
+    .lineTo( hb, top_inner_wide)          # bottom-right (wide, 66)
+    .lineTo( hb, top_outer_y)             # top-right (straight, 80)
+    .lineTo(-hb, top_outer_y)             # top-left (straight, 80)
+    .close()
     .extrude(CLIP_THICK)
 )
 
-# Elongated slots (Y-direction slots for vertical sliding)
+# 135° cam slots (push -X to open/retract from board, gravity closes)
 for (x, y) in TOP_CLIP_SCREW_POSITIONS:
     slot = (
         cq.Workplane("XY")
         .workplane(offset=FRONT_Z_TOP - 1)
         .center(x, y)
-        .slot2D(SLOT_LENGTH, SLOT_WIDTH, angle=90)
+        .slot2D(SLOT_LENGTH, SLOT_WIDTH, angle=SLOT_ANGLE)
         .extrude(CLIP_THICK + 2)
     )
     top_clip = top_clip.cut(slot)
 
-# Bent tab at +X end (90° upward for finger grip)
-tab_x = CLIP_LENGTH / 2 + TAB_LENGTH / 2
-tab_z_center = FRONT_Z_TOP + CLIP_THICK + TAB_HEIGHT / 2
-tab = (
-    cq.Workplane("XZ")
-    .center(tab_x, tab_z_center)
-    .rect(TAB_LENGTH, TAB_HEIGHT)
-    .extrude(-CLIP_WIDTH)
-)
-tab = tab.translate((0, clip_y_center_top + CLIP_WIDTH / 2, 0))
-top_clip_solid = top_clip.val().fuse(tab.val())
-top_clip = cq.Workplane("XY").newObject([top_clip_solid])
+# Bent tabs at both X ends (match wide end width for finger grip)
+top_wide_center_y = (top_inner_wide + top_outer_y) / 2   # 73.0
+for x_sign in [-1, 1]:
+    tab_x = x_sign * (hb + CLIP_THICK / 2)
+    tab = (
+        cq.Workplane("XY")
+        .workplane(offset=FRONT_Z_TOP)
+        .center(tab_x, top_wide_center_y)
+        .rect(CLIP_THICK, TOP_CLIP_WIDE)
+        .extrude(TAB_HEIGHT + CLIP_THICK)
+    )
+    top_clip_solid = top_clip.val().fuse(tab.val())
+    top_clip = cq.Workplane("XY").newObject([top_clip_solid])
 
 
 # ================================================================
-# PART 6: ASSEMBLY (visualization)
+# PART 6: ASSEMBLY (color-coded visualization)
 # ================================================================
 
-print("  [6/6] Assembly: combining all parts for visualization")
+print("  [6/6] Assembly: combining all parts (color-coded)")
 
-assy_solid = front_sheet.val().fuse(middle_sheet.val())
-assy_solid = assy_solid.fuse(rear_sheet.val())
-assy_solid = assy_solid.fuse(bottom_clip.val())
-assy_solid = assy_solid.fuse(top_clip.val())
-assembly = cq.Workplane("XY").newObject([assy_solid])
+assembly = cq.Assembly(name="fatif_adapter")
+assembly.add(rear_sheet,   name="rear_sheet",
+             color=cq.Color(0.12, 0.12, 0.14))   # near-black (anodized)
+assembly.add(middle_sheet, name="middle_sheet",
+             color=cq.Color(0.78, 0.78, 0.82))    # silver (bare aluminum)
+assembly.add(front_sheet,  name="front_sheet",
+             color=cq.Color(0.40, 0.40, 0.40))    # dark gray (powder coat)
+assembly.add(bottom_clip,  name="bottom_clip",
+             color=cq.Color(0.72, 0.45, 0.20))    # copper (for visibility)
+assembly.add(top_clip,     name="top_clip",
+             color=cq.Color(0.72, 0.45, 0.20))    # copper (for visibility)
 
 
 # ================================================================
@@ -379,35 +421,32 @@ assembly = cq.Workplane("XY").newObject([assy_solid])
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
-parts = {
+individual_parts = {
     "fatif_front_sheet": front_sheet,
     "fatif_middle_sheet": middle_sheet,
     "fatif_rear_sheet": rear_sheet,
     "fatif_bottom_clip": bottom_clip,
     "fatif_top_clip": top_clip,
-    "fatif_assembly": assembly,
 }
 
 print("\nExporting...")
-for name, part in parts.items():
-    # STEP file
+for name, part in individual_parts.items():
+    # STEP file (3D, with bends for clips)
     step_path = os.path.join(script_dir, f"{name}.step")
     cq.exporters.export(part, step_path)
     print(f"  STEP: {step_path}")
 
-    # DXF file (2D profile — top-down view for laser cutting)
-    # Skip DXF for assembly (it's 3D visualization only)
-    if name != "fatif_assembly":
-        dxf_path = os.path.join(script_dir, f"{name}.dxf")
+    # DXF file (2D profile for laser cutting)
+    dxf_path = os.path.join(script_dir, f"{name}.dxf")
+
+    if name in ("fatif_front_sheet", "fatif_middle_sheet", "fatif_rear_sheet"):
+        # Sheet parts: section at Z midpoint
         if name == "fatif_front_sheet":
             section_z = FRONT_Z_BOT + FRONT_THICK / 2
         elif name == "fatif_middle_sheet":
             section_z = MIDDLE_Z_BOT + MIDDLE_THICK / 2
-        elif name == "fatif_rear_sheet":
+        else:
             section_z = REAR_THICK / 2
-        elif name in ("fatif_bottom_clip", "fatif_top_clip"):
-            section_z = FRONT_Z_TOP + CLIP_THICK / 2
-
         section = (
             cq.Workplane("XY")
             .workplane(offset=section_z)
@@ -415,7 +454,73 @@ for name, part in parts.items():
         )
         cross = section.section()
         cq.exporters.export(cross, dxf_path)
-        print(f"  DXF:  {dxf_path}")
+    elif name == "fatif_bottom_clip":
+        # Bottom clip flat pattern: simple rectangle + round holes (no tabs)
+        flat = (
+            cq.Workplane("XY")
+            .rect(CLIP_BAR_LENGTH, BOT_CLIP_WIDTH)
+            .extrude(CLIP_THICK)
+        )
+        # Screw holes at clip-relative positions (clip centered at Y=0)
+        for (sx, sy) in BOTTOM_CLIP_SCREW_POSITIONS:
+            rel_y = sy - bot_center_y
+            feature = (
+                cq.Workplane("XY").workplane(offset=-1)
+                .center(sx, rel_y)
+                .circle(M3_CLEARANCE / 2)
+                .extrude(CLIP_THICK + 2)
+            )
+            flat = flat.cut(feature)
+        section = (
+            cq.Workplane("XY").workplane(offset=CLIP_THICK / 2)
+            .newObject([flat.val()])
+        )
+        cross = section.section()
+        cq.exporters.export(cross, dxf_path)
+
+    else:  # fatif_top_clip
+        # Top clip flat pattern: dog-bone + tab extensions + cam slots
+        # Local coords: inner edge (board side) at Y=0, outer at Y=TOP_CLIP_WIDE.
+        # Inner edge is profiled (wide at ends, narrow in middle).
+        # Tab material at each end matches the wide end width.
+        flat_half = CLIP_BAR_LENGTH / 2 + TAB_HEIGHT     # 53
+        dog_bone_inset = TOP_CLIP_WIDE - TOP_CLIP_NARROW # 6
+        flat = (
+            cq.Workplane("XY")
+            .moveTo(-flat_half, 0)                 # left tab, inner (wide)
+            .lineTo(-to_, 0)                       # taper start
+            .lineTo(-ti, dog_bone_inset)           # taper to narrow
+            .lineTo( ti, dog_bone_inset)           # narrow middle
+            .lineTo( to_, 0)                       # taper back to wide
+            .lineTo( flat_half, 0)                 # right tab, inner (wide)
+            .lineTo( flat_half, TOP_CLIP_WIDE)     # right tab, outer
+            .lineTo(-flat_half, TOP_CLIP_WIDE)     # left tab, outer
+            .close()
+            .extrude(CLIP_THICK)
+        )
+        # Cam slots at clip-relative positions (screw Y relative to inner edge)
+        for (sx, sy) in TOP_CLIP_SCREW_POSITIONS:
+            rel_y = sy - top_inner_wide  # screw Y relative to wide inner edge
+            feature = (
+                cq.Workplane("XY").workplane(offset=-1)
+                .center(sx, rel_y)
+                .slot2D(SLOT_LENGTH, SLOT_WIDTH, angle=SLOT_ANGLE)
+                .extrude(CLIP_THICK + 2)
+            )
+            flat = flat.cut(feature)
+        section = (
+            cq.Workplane("XY").workplane(offset=CLIP_THICK / 2)
+            .newObject([flat.val()])
+        )
+        cross = section.section()
+        cq.exporters.export(cross, dxf_path)
+
+    print(f"  DXF:  {dxf_path}")
+
+# Assembly STEP (color-coded)
+assy_path = os.path.join(script_dir, "fatif_assembly.step")
+assembly.save(assy_path)
+print(f"  STEP: {assy_path}")
 
 # ================================================================
 # BOUNDING BOX CHECKS
@@ -423,7 +528,7 @@ for name, part in parts.items():
 
 print("\n" + "=" * 60)
 print("Bounding box verification:")
-for name, part in parts.items():
+for name, part in individual_parts.items():
     bb = part.val().BoundingBox()
     print(f"  {name}:")
     print(f"    X: {bb.xmin:.2f} to {bb.xmax:.2f}  ({bb.xmax - bb.xmin:.2f}mm)")
@@ -449,15 +554,19 @@ print(f"  Laminated:      {FRONT_THICK}+{MIDDLE_THICK}+{REAR_THICK} = "
       f"{TOTAL_THICKNESS:.2f}mm total")
 print(f"  Lip:            {LIP_THICK:.2f}mm (front+middle overhang "
       f"{STEP_WIDTH}mm beyond rear)  [limit: 2.50mm]")
-print(f"  Assembly screws: 4x M3 flat head at R={ASSY_SCREW_R}mm (cardinal axes)")
-print(f"  Bottom clip:    {CLIP_LENGTH}x{CLIP_WIDTH}x{CLIP_THICK}mm, "
-      f"fixed, {CLIP_OVERLAP}mm overlap")
-print(f"  Top clip:       {CLIP_LENGTH}x{CLIP_WIDTH}x{CLIP_THICK}mm, "
-      f"spring-loaded, slots for {SLOT_LENGTH - SLOT_WIDTH:.1f}mm travel")
-print(f"  Clip screws:    2+2 M3 at X spacing {CLIP_SCREW_X_SPACING}mm, "
-      f"Y offset {CLIP_SCREW_Y_OFFSET}mm")
+print(f"  Assembly screws: 2x M3 flat head at (±{ASSY_SCREW_R}, 0)mm")
+print(f"  Bottom clip:    {CLIP_BAR_LENGTH}mm bar, "
+      f"{BOT_CLIP_WIDTH}mm wide, fixed, {CLIP_OVERLAP}mm overlap")
+print(f"  Top clip:       {CLIP_BAR_LENGTH}mm dog-bone bar + 2x{TAB_HEIGHT}mm tabs, "
+      f"{TOP_CLIP_NARROW}/{TOP_CLIP_WIDE}mm wide")
+print(f"    Cam action:   {SLOT_ANGLE:.0f}° slots, {SLOT_LENGTH - SLOT_WIDTH:.1f}mm travel, "
+      f"gravity return (push -X to open)")
+print(f"  Clip screws:    2+2 M3 pan head at X spacing {CLIP_SCREW_X_SPACING}mm")
+print(f"    Bottom Y:     ±{BOT_CLIP_SCREW_Y}mm, Top Y: ±{TOP_CLIP_SCREW_Y}mm")
+print(f"  Total screws:   6 (2 assembly + 4 clip, all laminate sheets)")
 print(f"  Materials:      6061-T6 (front/rear), 2024-T3 (middle)")
 print(f"  Finishes:       Powder coat (front), bare (middle), "
       f"black anodize (rear)")
 print("=" * 60)
 print("\nFiles ready for SendCutSend upload (STEP for quoting, DXF for cutting)")
+print("Note: Clip DXFs show flat patterns (pre-bend). Bend tabs up 90° at each end.")
