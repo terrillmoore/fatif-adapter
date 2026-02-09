@@ -96,6 +96,11 @@ ASSY_SCREW_R = 74.75        # midpoint of overlap band
 CLIP_SCREW_X_SPACING = 50.0 # distance between clip screw pair
 BOT_CLIP_SCREW_Y = 72.5     # Y offset for bottom clip screws
 TOP_CLIP_SCREW_Y = 74.0     # Y offset for top clip screws
+# Top clip X offset: center clip in X when in closed (gravity) position.
+# Closed position shifts clip +X by half_travel/√2 along 135° slot.
+import math as _m
+_half_travel = (9.0 - 3.4) / 2   # (SLOT_LENGTH - SLOT_WIDTH) / 2
+TOP_CLIP_SCREW_X_OFFSET = -_half_travel / _m.sqrt(2)  # ≈ -1.98mm
 
 # --- Clips (Cambo / Crown Graphic style) ---
 # Material: 304 stainless steel, .060" (1.52mm)
@@ -103,7 +108,7 @@ CLIP_BAR_LENGTH = 90.0      # flat bar length on adapter face (both clips)
 CLIP_THICK = 1.52           # .060" 304 stainless steel
 CLIP_OVERLAP = 2.0          # overlap onto board edge (both clips) — enough to retain, allows angling board in
 TAB_HEIGHT = 8.0            # tab height (perpendicular to bend line)
-TAB_BEND_RUN = 12.0         # 45° bend line: 12mm along each edge from corner
+TAB_BEND_RUN = 10.0         # 45° bend line: 10mm along each edge from corner
 CLIP_CORNER_R = 2.0         # corner radius for clip body (finger-friendly)
 
 # Bottom clip: simple rectangular bar
@@ -172,10 +177,10 @@ BOTTOM_CLIP_SCREW_POSITIONS = [
     ( CLIP_SCREW_X_SPACING / 2, -BOT_CLIP_SCREW_Y),
 ]
 
-# Top clip screws: 2 positions at +Y
+# Top clip screws: 2 positions at +Y (offset in X so clip is centered when closed)
 TOP_CLIP_SCREW_POSITIONS = [
-    (-CLIP_SCREW_X_SPACING / 2, TOP_CLIP_SCREW_Y),
-    ( CLIP_SCREW_X_SPACING / 2, TOP_CLIP_SCREW_Y),
+    (-CLIP_SCREW_X_SPACING / 2 + TOP_CLIP_SCREW_X_OFFSET, TOP_CLIP_SCREW_Y),
+    ( CLIP_SCREW_X_SPACING / 2 + TOP_CLIP_SCREW_X_OFFSET, TOP_CLIP_SCREW_Y),
 ]
 
 ALL_SCREW_POSITIONS = (
@@ -537,41 +542,47 @@ for name, part in individual_parts.items():
         bp_x = b_lx + TAB_HEIGHT * perp_x        # B'
         bp_y = b_ly + TAB_HEIGHT * perp_y
 
+        # Build sharp outline, then selectively fillet corners
         flat = (
             cq.Workplane("XY")
-            # Start on left edge, above lower-left corner radius
-            .moveTo(b_lx, cr)
-            # Lower-left corner (R)
-            .threePointArc(
-                (b_lx + cr * (1 - c45), cr * (1 - s45)),
-                (b_lx + cr, 0))
+            .moveTo(b_lx, 0)
             # Bottom edge through dog-bone
             .lineTo(-to_, 0)
             .lineTo(-ti, dog_bone_inset)
             .lineTo( ti, dog_bone_inset)
             .lineTo( to_, 0)
-            .lineTo( hb - cr, 0)
-            # Lower-right corner (R)
-            .threePointArc(
-                (hb - cr * (1 - c45), cr * (1 - s45)),
-                (hb, cr))
-            .lineTo(hb, TOP_CLIP_WIDE - cr)
-            # Upper-right corner (R)
-            .threePointArc(
-                (hb - cr * (1 - c45), TOP_CLIP_WIDE - cr * (1 - s45)),
-                (hb - cr, TOP_CLIP_WIDE))
+            .lineTo( hb, 0)
+            .lineTo( hb, TOP_CLIP_WIDE)
             # Top edge to bend line start (A)
             .lineTo(a_lx, a_ly)
-            # Tab: A → A' (outward perpendicular to bend line)
+            # Tab: A → A' → B' → B
             .lineTo(ap_x, ap_y)
-            # Tab top: A' → B' (parallel to bend line)
             .lineTo(bp_x, bp_y)
-            # Tab: B' → B (inward perpendicular to bend line)
             .lineTo(b_lx, b_ly)
-            # Left edge: B → start (close)
+            # Left edge: B → start
             .close()
             .extrude(CLIP_THICK)
         )
+        # Fillet the 6 corners that should be radiused:
+        # 4 body corners + 2 tab outer corners (A' and B')
+        # Leaves dog-bone taper transitions and bend endpoints sharp.
+        # Corners to fillet: 3 body rectangular corners + 2 tab outer corners.
+        # Upper-left original corner (-45, 14) doesn't exist (replaced by tab).
+        # Lower-left (-45, 0) has 4mm to bend endpoint B (-45, 4) — room for R2.
+        fillet_pts = [
+            (b_lx, 0),                          # lower-left body
+            (hb, 0),                             # lower-right body
+            (hb, TOP_CLIP_WIDE),                 # upper-right body
+            (ap_x, ap_y),                        # tab corner A'
+            (bp_x, bp_y),                        # tab corner B'
+        ]
+        z_mid = CLIP_THICK / 2
+        for fx, fy in fillet_pts:
+            flat = (
+                flat.edges("|Z")
+                .edges(cq.selectors.NearestToPointSelector((fx, fy, z_mid)))
+                .fillet(cr)
+            )
         # Cam slots at clip-relative positions (screw Y relative to inner edge)
         for (sx, sy) in TOP_CLIP_SCREW_POSITIONS:
             rel_y = sy - top_inner_wide  # screw Y relative to wide inner edge

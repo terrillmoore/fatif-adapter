@@ -16,11 +16,38 @@ Three aluminum sheets laminated with M3 flat head screws:
 
 - **Total thickness:** 4.98mm
 - **Lip:** Front + middle overhang rear by 5.75mm, creating the 2.42mm lip for Fatif spring clips (limit: 2.50mm)
-- **Board retention:** Cambo-style clips — fixed bottom bar + spring-loaded sliding top bar
-- **Assembly:** 4x M3 flat head screws on cardinal axes at R=74.75mm
+- **Board retention:** Cambo / Crown Graphic style clips (see below)
+- **Assembly:** 2x M3 flat head screws at (±74.75, 0) + 4x M3 clip screws
 
 The CadQuery script generates individual STEP and DXF files for each part,
 plus a combined assembly STEP for visualization.
+
+### Clip design
+
+Board retention uses a Cambo / Crown Graphic style mechanism:
+
+| Clip | Material | Size | Features |
+|------|----------|------|----------|
+| Bottom (fixed) | .060" 304 SS (1.52mm) | 90mm × 10mm | Simple rectangular bar, 2x M3 pan head screws, 3.5mm board overlap |
+| Top (sliding) | .060" 304 SS (1.52mm) | 90mm dog-bone + 2x 8mm tabs | 14mm wide at ends / 8mm narrow in middle, 135° cam slots, bent tabs |
+
+**Operation:** Push the top clip tab toward -X to retract it from the board
+(cam slots convert lateral force to vertical retraction). Tilt the board in
+under the fixed bottom clip, release the top clip, and gravity returns it
+to the closed position — no springs needed. The cam slots provide 5.6mm of
+travel, yielding ~4.0mm of Y retraction from the board edge.
+
+### Fabrication notes
+
+- **Vendor:** [SendCutSend](https://sendcutsend.com/) for laser cutting,
+  powder coat, and anodize. [Ponoko](https://www.ponoko.com/) is an
+  alternative for 304 SS clips (also offers painting for logo application).
+- **Deburring:** Specify deburring on all parts, especially clip edges
+  that will be handled during board changes.
+- **Clip DXFs** show flat patterns (pre-bend). Bend tabs up 90° at each end
+  of the top clip.
+- **Tapping:** Rear sheet M3 holes are tap drill size (2.5mm). Specify M3×0.5
+  tapping, or tap by hand after receiving parts.
 
 ### Surface finish rationale
 
