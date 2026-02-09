@@ -55,11 +55,12 @@ PAINT_CY = 77.5  # center of narrow section (for text placement)
 
 # Paint fill geometry
 PAINT_INSET = 1.0       # mm inset from clip edges
-PAINT_TAB_MARGIN = 2.0  # mm from clip ends to clear the bend line
+PAINT_TAB_MARGIN = 2.0  # mm margin from bend line at -X end
 PAINT_CORNER_R = 2.0    # radius for all paint outline corners
 
 # Key derived coordinates (inset from clip edges)
-_pe = 45 - PAINT_TAB_MARGIN   # 43 — paint X extent
+_pe_left = 45 - PAINT_TAB_MARGIN   # 43 — paint X extent at -X end (tab bend line)
+_pe_right = 45 - PAINT_INSET       # 44 — paint X extent at +X end (no tab)
 _pi = PAINT_INSET
 _top = 81.5 - _pi             # 80.5
 _bot_wide = 67.5 + _pi        # 68.5
@@ -247,16 +248,16 @@ def paint_outline_points():
     Build the paint outline as a smooth polygon with rounded corners
     at every direction change, matching the Crown Graphic aesthetic.
     """
-    # Sharp polygon vertices (CCW)
+    # Sharp polygon vertices (CCW) — asymmetric: tab margin at -X, edge inset at +X
     sharp = [
-        (-_pe, _bot_wide),       # bottom-left (wide)
+        (-_pe_left, _bot_wide),       # bottom-left (wide, tab side)
         (-_taper_outer_x, _bot_wide),  # taper start
         (-_taper_inner_x, _bot_narrow),  # taper to narrow
         ( _taper_inner_x, _bot_narrow),  # narrow section
         ( _taper_outer_x, _bot_wide),  # taper back
-        ( _pe, _bot_wide),       # bottom-right (wide)
-        ( _pe, _top),            # top-right
-        (-_pe, _top),            # top-left
+        ( _pe_right, _bot_wide),       # bottom-right (wide, no tab)
+        ( _pe_right, _top),            # top-right
+        (-_pe_left, _top),             # top-left (tab side)
     ]
     return _fillet_polygon(sharp, PAINT_CORNER_R)
 
@@ -389,13 +390,10 @@ def draw_full_view_geom(ax):
     ax.fill([v[0] for v in tc], [v[1] for v in tc],
             color=STAINLESS, edgecolor=STAINLESS_EDGE, lw=1.0, zorder=5)
 
-    # Tab indicators
-    for sign in [-1, 1]:
-        tx = sign * 45
-        ax.plot([tx, tx], [73.5, 81.5], color=STAINLESS_EDGE, lw=2.5, zorder=6,
-                solid_capstyle="butt")
-        ax.annotate("", xy=(tx + sign * 3, 77.5), xytext=(tx, 77.5),
-                    arrowprops=dict(arrowstyle="->", color=STAINLESS_EDGE, lw=1.0), zorder=6)
+    # 45° diagonal bend line at upper-left (Crown Graphic style tab)
+    # A = (-33, 81.5) on outer edge, B = (-45, 69.5) on left edge
+    ax.plot([-33, -45], [81.5, 69.5], color=STAINLESS_EDGE, lw=1.5, zorder=6,
+            linestyle="--", solid_capstyle="butt")
 
     # Paint fill (includes slot clearance zones)
     draw_paint_fill(ax)
@@ -437,12 +435,11 @@ def draw_detail_geom(ax):
     ax.fill([v[0] for v in tc], [v[1] for v in tc],
             color=STAINLESS, edgecolor=STAINLESS_EDGE, lw=1.5, zorder=2)
 
-    for sign in [-1, 1]:
-        tx = sign * 45
-        ax.plot([tx, tx], [67.5, 81.5], color=STAINLESS_EDGE, lw=3, zorder=3,
-                solid_capstyle="butt")
-        ax.annotate("tab\n(bend up)", xy=(tx, 74.5), fontsize=5,
-                    ha="center", va="center", color="#666666", zorder=4)
+    # 45° diagonal bend line at upper-left (Crown Graphic style tab)
+    ax.plot([-33, -45], [81.5, 69.5], color=STAINLESS_EDGE, lw=2, zorder=3,
+            linestyle="--", solid_capstyle="butt")
+    ax.annotate("tab\n(45° bend)", xy=(-42, 73), fontsize=5,
+                ha="center", va="center", color="#666666", zorder=4)
 
     # Paint fill (includes slot clearance zones)
     draw_paint_fill(ax, edgecolor="#444444", lw=0.8)

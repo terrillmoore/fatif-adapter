@@ -39,8 +39,8 @@ Three-piece laminated approach:
 Board retention — Cambo / Crown Graphic style clips:
   Fixed bottom clip: rectangular flat bar, 2 screws, no tabs
   Sliding top clip: dog-bone profile (wider at slot ends, narrower in
-    middle), 135° cam slots (push -X to open, gravity closes), bent
-    tabs at both ends for finger grip
+    middle), 135° cam slots (push -X to open, gravity closes), single
+    45° tab at -X end for finger grip (Crown Graphic style)
   Clip material: .060" 304 stainless steel (1.52mm)
 """
 
@@ -102,22 +102,25 @@ TOP_CLIP_SCREW_Y = 74.0     # Y offset for top clip screws
 CLIP_BAR_LENGTH = 90.0      # flat bar length on adapter face (both clips)
 CLIP_THICK = 1.52           # .060" 304 stainless steel
 CLIP_OVERLAP = 2.0          # overlap onto board edge (both clips) — enough to retain, allows angling board in
-TAB_HEIGHT = 8.0            # bent tab height at both ends (both clips)
+TAB_HEIGHT = 8.0            # tab height (perpendicular to bend line)
+TAB_BEND_RUN = 12.0         # 45° bend line: 12mm along each edge from corner
+CLIP_CORNER_R = 2.0         # corner radius for clip body (finger-friendly)
 
 # Bottom clip: simple rectangular bar
 BOT_CLIP_WIDTH = 10.0       # uniform width
 
 # Top clip: dog-bone profile (Crown Graphic style)
 # Wider at screw/slot ends, narrower in middle (nameplate area).
-# Inner edge (board side) is straight for uniform overlap.
-# Outer edge has the dog-bone taper.
-TOP_CLIP_WIDE = 14.0        # width at ends (accommodates 45° cam slots)
+# Inner edge (board side) has dog-bone profile.
+# Outer edge (+Y) is straight.
+# Single 45° tab at -X end (matches 135° cam slot push direction).
+TOP_CLIP_WIDE = 14.0        # width at ends (accommodates cam slots)
 TOP_CLIP_NARROW = 8.0       # width in middle
 TOP_CLIP_TAPER_INNER = 15.0 # X from center where taper begins
 TOP_CLIP_TAPER_OUTER = 20.0 # X from center where full width begins
 
-# Top clip cam slots (135° = cam action: push tab +X to close,
-# push tab -X to open/retract, gravity return to closed)
+# Top clip cam slots (135° = cam action: push tab -X to open,
+# gravity return to closed)
 SLOT_LENGTH = 9.0           # slot length
 SLOT_WIDTH = 3.4            # M3 clearance
 SLOT_ANGLE = 135.0          # degrees from X axis
@@ -307,20 +310,24 @@ for (x, y) in ALL_SCREW_POSITIONS:
 
 # Simple rectangular bar straddling the bottom cutout edge.
 # Inner portion overlaps board by CLIP_OVERLAP; outer portion holds screws.
-bot_inner_y = -(HALF_GOWLAND - CLIP_OVERLAP)        # -66.0 (board side)
-bot_outer_y = bot_inner_y - BOT_CLIP_WIDTH           # -76.0 (away from board)
-bot_center_y = (bot_inner_y + bot_outer_y) / 2       # -71.0
+bot_inner_y = -(HALF_GOWLAND - CLIP_OVERLAP)        # -67.5 (board side)
+bot_outer_y = bot_inner_y - BOT_CLIP_WIDTH           # -77.5 (away from board)
+bot_center_y = (bot_inner_y + bot_outer_y) / 2       # -72.5
+cr = CLIP_CORNER_R
 
-print("  [4/6] Bottom clip: %.0fmm bar, %.0fmm wide, %.1fmm thick (fixed, no tabs)"
-      % (CLIP_BAR_LENGTH, BOT_CLIP_WIDTH, CLIP_THICK))
+print("  [4/6] Bottom clip: %.0fmm bar, %.0fmm wide, %.1fmm thick (fixed, R%.0f corners)"
+      % (CLIP_BAR_LENGTH, BOT_CLIP_WIDTH, CLIP_THICK, cr))
 
-# Simple flat bar — no bent tabs (fixed clip, nothing to grip)
+# Flat bar with rounded corners — no bent tabs (fixed clip)
+hw = CLIP_BAR_LENGTH / 2
+hh = BOT_CLIP_WIDTH / 2
 bottom_clip = (
     cq.Workplane("XY")
     .workplane(offset=FRONT_Z_TOP)
     .center(0, bot_center_y)
     .rect(CLIP_BAR_LENGTH, BOT_CLIP_WIDTH)
     .extrude(CLIP_THICK)
+    .edges("|Z").fillet(cr)
 )
 
 # Two clearance holes for mounting screws
@@ -343,32 +350,44 @@ for (x, y) in BOTTOM_CLIP_SCREW_POSITIONS:
 # Inner edge (board side, lower Y) has dog-bone profile:
 #   wide at ends = more overlap (board grip at screw locations)
 #   narrow in middle = less overlap (connecting bar / nameplate area)
-# Cam action: 135° slots mean push -X to open, gravity returns to closed.
-top_outer_y = HALF_GOWLAND - CLIP_OVERLAP + TOP_CLIP_WIDE  # 80.0 (straight)
-top_inner_wide = top_outer_y - TOP_CLIP_WIDE                # 66.0 (ends)
-top_inner_narrow = top_outer_y - TOP_CLIP_NARROW            # 72.0 (middle)
+# Single 45° tab at -X end (push direction matches 135° cam slots).
+# All body corners radiused except where tab attaches (top-left).
+import math
+
+top_outer_y = HALF_GOWLAND - CLIP_OVERLAP + TOP_CLIP_WIDE  # 81.5 (straight)
+top_inner_wide = top_outer_y - TOP_CLIP_WIDE                # 67.5 (ends)
+top_inner_narrow = top_outer_y - TOP_CLIP_NARROW            # 73.5 (middle)
 hb = CLIP_BAR_LENGTH / 2                                    # 45.0
 ti = TOP_CLIP_TAPER_INNER                                   # 15.0
 to_ = TOP_CLIP_TAPER_OUTER                                  # 20.0
 
-print("  [5/6] Top clip: %.0fmm dog-bone bar + 2x%.0fmm tabs, "
+print("  [5/6] Top clip: %.0fmm dog-bone bar + 45° rectangular tab (%.0fmm), "
       "%.0f/%.0fmm wide, %.1fmm thick"
       % (CLIP_BAR_LENGTH, TAB_HEIGHT, TOP_CLIP_NARROW, TOP_CLIP_WIDE, CLIP_THICK))
-print("         135° cam slots, gravity return (no springs)")
+print("         135° cam slots, gravity return, R%.0f corners" % cr)
 
-# Dog-bone profile: straight outer edge (+Y), profiled inner edge
+# Bend line endpoints for 45° triangular tab at upper-left corner.
+# The bend line runs diagonally from A (on outer edge) to B (on left edge).
+# The triangle A-C-B (C = original corner) bends 90° up from the clip face.
+tab_ax = -hb + TAB_BEND_RUN                # A: X on outer edge
+tab_by = top_outer_y - TAB_BEND_RUN        # B: Y on left edge
+
+# Dog-bone profile with 45° chamfer at upper-left (tab material removed).
+# Corner radii applied via DXF flat pattern (what gets laser cut).
+# 3D model uses sharp corners for robustness.
 top_clip = (
     cq.Workplane("XY")
     .workplane(offset=FRONT_Z_TOP)
-    .moveTo(-hb, top_inner_wide)          # bottom-left (wide, 66)
-    .lineTo(-to_, top_inner_wide)         # taper start
-    .lineTo(-ti, top_inner_narrow)        # taper to narrow (72)
-    .lineTo( ti, top_inner_narrow)        # narrow middle
-    .lineTo( to_, top_inner_wide)         # taper back to wide (66)
-    .lineTo( hb, top_inner_wide)          # bottom-right (wide, 66)
-    .lineTo( hb, top_outer_y)             # top-right (straight, 80)
-    .lineTo(-hb, top_outer_y)             # top-left (straight, 80)
-    .close()
+    .moveTo(-hb, top_inner_wide)
+    .lineTo(-to_, top_inner_wide)
+    .lineTo(-ti, top_inner_narrow)
+    .lineTo( ti, top_inner_narrow)
+    .lineTo( to_, top_inner_wide)
+    .lineTo( hb, top_inner_wide)
+    .lineTo( hb, top_outer_y)
+    .lineTo(tab_ax, top_outer_y)          # A: bend line start on outer edge
+    .lineTo(-hb, tab_by)                  # B: bend line end on left edge
+    .close()                              # left edge: B → start
     .extrude(CLIP_THICK)
 )
 
@@ -383,19 +402,31 @@ for (x, y) in TOP_CLIP_SCREW_POSITIONS:
     )
     top_clip = top_clip.cut(slot)
 
-# Bent tabs at both X ends (match wide end width for finger grip)
-top_wide_center_y = (top_inner_wide + top_outer_y) / 2   # 73.0
-for x_sign in [-1, 1]:
-    tab_x = x_sign * (hb + CLIP_THICK / 2)
-    tab = (
-        cq.Workplane("XY")
-        .workplane(offset=FRONT_Z_TOP)
-        .center(tab_x, top_wide_center_y)
-        .rect(CLIP_THICK, TOP_CLIP_WIDE)
-        .extrude(TAB_HEIGHT + CLIP_THICK)
-    )
-    top_clip_solid = top_clip.val().fuse(tab.val())
-    top_clip = cq.Workplane("XY").newObject([top_clip_solid])
+# Single 45° rectangular tab at upper-left (Crown Graphic style).
+# Rectangular tab extends perpendicular to the A-B bend line by TAB_HEIGHT.
+# When bent 90° along A-B, creates a rectangular finger grip.
+# Pushing the tab drives the clip along the 135° cam slot direction.
+s2 = math.sqrt(2)
+z_top = FRONT_Z_TOP + CLIP_THICK
+ab_len = TAB_BEND_RUN * s2               # bend line length ≈ 17.0mm
+
+# Build tab as rectangle on a vertical workplane containing bend line A-B.
+# Workplane: xDir along A→B, yDir = (0,0,1) up, normal outward from body.
+tab = (
+    cq.Workplane(cq.Plane(
+        origin=(tab_ax, top_outer_y, z_top),
+        normal=(-1/s2, 1/s2, 0),
+        xDir=(-1/s2, -1/s2, 0)
+    ))
+    .moveTo(0, 0)
+    .lineTo(ab_len, 0)
+    .lineTo(ab_len, TAB_HEIGHT)
+    .lineTo(0, TAB_HEIGHT)
+    .close()
+    .extrude(CLIP_THICK)
+)
+top_clip_solid = top_clip.val().fuse(tab.val())
+top_clip = cq.Workplane("XY").newObject([top_clip_solid])
 
 
 # ================================================================
@@ -457,11 +488,12 @@ for name, part in individual_parts.items():
         cross = section.section()
         cq.exporters.export(cross, dxf_path)
     elif name == "fatif_bottom_clip":
-        # Bottom clip flat pattern: simple rectangle + round holes (no tabs)
+        # Bottom clip flat pattern: rounded rectangle + round holes (no tabs)
         flat = (
             cq.Workplane("XY")
             .rect(CLIP_BAR_LENGTH, BOT_CLIP_WIDTH)
             .extrude(CLIP_THICK)
+            .edges("|Z").fillet(cr)
         )
         # Screw holes at clip-relative positions (clip centered at Y=0)
         for (sx, sy) in BOTTOM_CLIP_SCREW_POSITIONS:
@@ -481,22 +513,62 @@ for name, part in individual_parts.items():
         cq.exporters.export(cross, dxf_path)
 
     else:  # fatif_top_clip
-        # Top clip flat pattern: dog-bone + tab extensions + cam slots
-        # Local coords: inner edge (board side) at Y=0, outer at Y=TOP_CLIP_WIDE.
-        # Inner edge is profiled (wide at ends, narrow in middle).
-        # Tab material at each end matches the wide end width.
-        flat_half = CLIP_BAR_LENGTH / 2 + TAB_HEIGHT     # 53
-        dog_bone_inset = TOP_CLIP_WIDE - TOP_CLIP_NARROW # 6
+        # Top clip flat pattern: dog-bone body + rectangular tab at upper-left.
+        # Tab extends perpendicular to 45° bend line A-B by TAB_HEIGHT.
+        # Local coords: inner edge at Y=0, outer at Y=TOP_CLIP_WIDE.
+        # Bend line: A_local=(-hb+TAB_BEND_RUN, TOP_CLIP_WIDE) to
+        #            B_local=(-hb, TOP_CLIP_WIDE-TAB_BEND_RUN)
+        dog_bone_inset = TOP_CLIP_WIDE - TOP_CLIP_NARROW  # 6
+        c45 = math.cos(math.pi / 4)
+        s45 = math.sin(math.pi / 4)
+
+        # Tab corner positions (perpendicular to bend line, outward)
+        # Outward direction from A-B: (-1/√2, 1/√2)
+        perp_x = -1 / math.sqrt(2)
+        perp_y = 1 / math.sqrt(2)
+        # A on outer edge, B on left edge (local coords)
+        a_lx = -hb + TAB_BEND_RUN               # -33
+        a_ly = TOP_CLIP_WIDE                      # 14
+        b_lx = -hb                                # -45
+        b_ly = TOP_CLIP_WIDE - TAB_BEND_RUN      # 2
+        # Tab outer corners: A' and B' at TAB_HEIGHT outward from A and B
+        ap_x = a_lx + TAB_HEIGHT * perp_x        # A'
+        ap_y = a_ly + TAB_HEIGHT * perp_y
+        bp_x = b_lx + TAB_HEIGHT * perp_x        # B'
+        bp_y = b_ly + TAB_HEIGHT * perp_y
+
         flat = (
             cq.Workplane("XY")
-            .moveTo(-flat_half, 0)                 # left tab, inner (wide)
-            .lineTo(-to_, 0)                       # taper start
-            .lineTo(-ti, dog_bone_inset)           # taper to narrow
-            .lineTo( ti, dog_bone_inset)           # narrow middle
-            .lineTo( to_, 0)                       # taper back to wide
-            .lineTo( flat_half, 0)                 # right tab, inner (wide)
-            .lineTo( flat_half, TOP_CLIP_WIDE)     # right tab, outer
-            .lineTo(-flat_half, TOP_CLIP_WIDE)     # left tab, outer
+            # Start on left edge, above lower-left corner radius
+            .moveTo(b_lx, cr)
+            # Lower-left corner (R)
+            .threePointArc(
+                (b_lx + cr * (1 - c45), cr * (1 - s45)),
+                (b_lx + cr, 0))
+            # Bottom edge through dog-bone
+            .lineTo(-to_, 0)
+            .lineTo(-ti, dog_bone_inset)
+            .lineTo( ti, dog_bone_inset)
+            .lineTo( to_, 0)
+            .lineTo( hb - cr, 0)
+            # Lower-right corner (R)
+            .threePointArc(
+                (hb - cr * (1 - c45), cr * (1 - s45)),
+                (hb, cr))
+            .lineTo(hb, TOP_CLIP_WIDE - cr)
+            # Upper-right corner (R)
+            .threePointArc(
+                (hb - cr * (1 - c45), TOP_CLIP_WIDE - cr * (1 - s45)),
+                (hb - cr, TOP_CLIP_WIDE))
+            # Top edge to bend line start (A)
+            .lineTo(a_lx, a_ly)
+            # Tab: A → A' (outward perpendicular to bend line)
+            .lineTo(ap_x, ap_y)
+            # Tab top: A' → B' (parallel to bend line)
+            .lineTo(bp_x, bp_y)
+            # Tab: B' → B (inward perpendicular to bend line)
+            .lineTo(b_lx, b_ly)
+            # Left edge: B → start (close)
             .close()
             .extrude(CLIP_THICK)
         )
@@ -516,6 +588,12 @@ for name, part in individual_parts.items():
         )
         cross = section.section()
         cq.exporters.export(cross, dxf_path)
+        # Note: bend line from A to B is internal (not in DXF outline)
+        bend_a_local = (-hb + TAB_BEND_RUN, TOP_CLIP_WIDE)
+        bend_b_local = (-hb, TOP_CLIP_WIDE - TAB_BEND_RUN)
+        print(f"         Bend line (flat pattern): "
+              f"({bend_a_local[0]:.0f}, {bend_a_local[1]:.0f}) to "
+              f"({bend_b_local[0]:.0f}, {bend_b_local[1]:.0f})")
 
     print(f"  DXF:  {dxf_path}")
 
@@ -559,8 +637,9 @@ print(f"  Lip:            {LIP_THICK:.2f}mm (front+middle overhang "
 print(f"  Assembly screws: 2x M3 flat head at (±{ASSY_SCREW_R}, 0)mm")
 print(f"  Bottom clip:    {CLIP_BAR_LENGTH}mm bar, "
       f"{BOT_CLIP_WIDTH}mm wide, fixed, {CLIP_OVERLAP}mm overlap")
-print(f"  Top clip:       {CLIP_BAR_LENGTH}mm dog-bone bar + 2x{TAB_HEIGHT}mm tabs, "
-      f"{TOP_CLIP_NARROW}/{TOP_CLIP_WIDE}mm wide")
+print(f"  Top clip:       {CLIP_BAR_LENGTH}mm dog-bone bar + 45° rectangular tab "
+      f"({TAB_HEIGHT}mm tall, {TAB_BEND_RUN}mm bend run), "
+      f"{TOP_CLIP_NARROW}/{TOP_CLIP_WIDE}mm wide, R{CLIP_CORNER_R} corners")
 print(f"    Cam action:   {SLOT_ANGLE:.0f}° slots, {SLOT_LENGTH - SLOT_WIDTH:.1f}mm travel, "
       f"gravity return (push -X to open)")
 print(f"  Clip screws:    2+2 M3 pan head at X spacing {CLIP_SCREW_X_SPACING}mm")
@@ -572,4 +651,7 @@ print(f"  Finishes:       Powder coat (front), bare (middle), "
       f"black anodize (rear), bare (clips)")
 print("=" * 60)
 print("\nFiles ready for SendCutSend upload (STEP for quoting, DXF for cutting)")
-print("Note: Clip DXFs show flat patterns (pre-bend). Bend tabs up 90° at each end.")
+print("Note: Clip DXFs show flat patterns (pre-bend).")
+print(f"  Top clip: bend 90° up along 45° diagonal at upper-left corner")
+print(f"    Bend line (flat coords): (-{int(hb - TAB_BEND_RUN)}, {int(TOP_CLIP_WIDE)}) "
+      f"to (-{int(hb)}, {int(TOP_CLIP_WIDE - TAB_BEND_RUN)})")
