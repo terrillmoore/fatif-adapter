@@ -90,9 +90,10 @@ BOT_CLIP_VERTS = [
 ]
 
 # Screw positions
-# Top clip screws: offset in X for centering when closed
-_screw_x_offset = -_half_travel / math.sqrt(2)   # ≈ -1.98
-TOP_CLIP_SCREWS = [(-25 + _screw_x_offset, 74), (25 + _screw_x_offset, 74)]
+# Top clip screws: each centered in its wide end when closed
+_left_wide_cx = -(CLIP_BAR_LENGTH / 2 + 20) / 2   # -32.5
+_right_wide_cx = (20 + CLIP_BAR_LENGTH / 2) / 2    # +32.5
+TOP_CLIP_SCREWS = [(_left_wide_cx + _closed_dx, 74), (_right_wide_cx + _closed_dx, 74)]
 BOT_CLIP_SCREWS = [(-25, -72.5), (25, -72.5)]
 ASSY_SCREWS = [(-74.75, 0), (74.75, 0)]
 

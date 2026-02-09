@@ -96,11 +96,15 @@ ASSY_SCREW_R = 74.75        # midpoint of overlap band
 CLIP_SCREW_X_SPACING = 50.0 # distance between clip screw pair
 BOT_CLIP_SCREW_Y = 72.5     # Y offset for bottom clip screws
 TOP_CLIP_SCREW_Y = 74.0     # Y offset for top clip screws
-# Top clip X offset: center clip in X when in closed (gravity) position.
-# Closed position shifts clip +X by half_travel/√2 along 135° slot.
+# Top clip screw X positions: each screw centered in its wide end when
+# clip is fully closed (gravity position).
+# Closed position shifts clip +X by half_travel/√2 ≈ 1.98mm along 135° slot.
+# Screw appears at X_adapter - dx in clip frame.
+# Left wide end (clip frame):  X = [-CLIP_BAR_LENGTH/2, -TAPER_OUTER], center = -32.5
+# Right wide end (clip frame): X = [+TAPER_OUTER, +CLIP_BAR_LENGTH/2], center = +32.5
 import math as _m
 _half_travel = (9.0 - 3.4) / 2   # (SLOT_LENGTH - SLOT_WIDTH) / 2
-TOP_CLIP_SCREW_X_OFFSET = -_half_travel / _m.sqrt(2)  # ≈ -1.98mm
+_closed_dx = _half_travel / _m.sqrt(2)  # ≈ 1.98mm
 
 # --- Clips (Cambo / Crown Graphic style) ---
 # Material: 304 stainless steel, .060" (1.52mm)
@@ -177,10 +181,13 @@ BOTTOM_CLIP_SCREW_POSITIONS = [
     ( CLIP_SCREW_X_SPACING / 2, -BOT_CLIP_SCREW_Y),
 ]
 
-# Top clip screws: 2 positions at +Y (offset in X so clip is centered when closed)
+# Top clip screws: 2 positions at +Y, each centered in its wide end when closed.
+# X_adapter = wide_end_center + _closed_dx  (so screw - dx = center in clip frame)
+_left_wide_cx = -(CLIP_BAR_LENGTH / 2 + TOP_CLIP_TAPER_OUTER) / 2   # -32.5
+_right_wide_cx = (TOP_CLIP_TAPER_OUTER + CLIP_BAR_LENGTH / 2) / 2   # +32.5
 TOP_CLIP_SCREW_POSITIONS = [
-    (-CLIP_SCREW_X_SPACING / 2 + TOP_CLIP_SCREW_X_OFFSET, TOP_CLIP_SCREW_Y),
-    ( CLIP_SCREW_X_SPACING / 2 + TOP_CLIP_SCREW_X_OFFSET, TOP_CLIP_SCREW_Y),
+    (_left_wide_cx + _closed_dx, TOP_CLIP_SCREW_Y),    # -X screw: -30.52
+    (_right_wide_cx + _closed_dx, TOP_CLIP_SCREW_Y),   # +X screw: +34.48
 ]
 
 ALL_SCREW_POSITIONS = (
@@ -686,8 +693,10 @@ print(f"  Top clip:       {CLIP_BAR_LENGTH}mm dog-bone bar + 45° rectangular ta
       f"{TOP_CLIP_NARROW}/{TOP_CLIP_WIDE}mm wide, R{CLIP_CORNER_R} corners")
 print(f"    Cam action:   {SLOT_ANGLE:.0f}° slots, {SLOT_LENGTH - SLOT_WIDTH:.1f}mm travel, "
       f"gravity return (push -X to open)")
-print(f"  Clip screws:    2+2 M3 pan head at X spacing {CLIP_SCREW_X_SPACING}mm")
-print(f"    Bottom Y:     ±{BOT_CLIP_SCREW_Y}mm, Top Y: ±{TOP_CLIP_SCREW_Y}mm")
+_top_screw_spacing = TOP_CLIP_SCREW_POSITIONS[1][0] - TOP_CLIP_SCREW_POSITIONS[0][0]
+print(f"  Clip screws:    2+2 M3 pan head")
+print(f"    Bottom:       X spacing {CLIP_SCREW_X_SPACING}mm, Y=±{BOT_CLIP_SCREW_Y}mm")
+print(f"    Top:          X spacing {_top_screw_spacing:.1f}mm (centered in wide ends), Y=±{TOP_CLIP_SCREW_Y}mm")
 print(f"  Total screws:   6 (2 assembly + 4 clip, all laminate sheets)")
 print(f"  Materials:      6061-T6 (front/rear), 2024-T3 (middle), "
       f"304 SS (clips)")
