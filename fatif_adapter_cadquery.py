@@ -637,9 +637,16 @@ for name, part in individual_parts.items():
         )
         cross = section.section()
         cq.exporters.export(cross, dxf_path)
-        # Note: bend line from A to B is internal (not in DXF outline)
+        # Add bend line A→B on a separate "Bend" layer (green, color 3)
+        # so Ponoko can distinguish bend from cut operations.
         bend_a_local = (-hb + TAB_BEND_RUN, TOP_CLIP_WIDE)
         bend_b_local = (-hb, TOP_CLIP_WIDE - TAB_BEND_RUN)
+        import ezdxf
+        dxf_doc = ezdxf.readfile(dxf_path)
+        dxf_doc.layers.add("Bend", color=3)  # green
+        msp = dxf_doc.modelspace()
+        msp.add_line(bend_a_local, bend_b_local, dxfattribs={"layer": "Bend"})
+        dxf_doc.saveas(dxf_path)
         print(f"         Bend line (flat pattern): "
               f"({bend_a_local[0]:.0f}, {bend_a_local[1]:.0f}) to "
               f"({bend_b_local[0]:.0f}, {bend_b_local[1]:.0f})")

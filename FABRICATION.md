@@ -28,7 +28,7 @@ Go to [sendcutsend.com](https://sendcutsend.com/) and create 3 line items:
 - [ ] Upload `output/fatif_middle_sheet.dxf`
 - [ ] Material: 2024-T3 Aluminum, .025" (0.64mm)
 - [ ] Finish: None (bare)
-- [ ] Add deburring
+- [ ] Deburring: not available at this thickness — hand deburr with scotch-brite if needed at assembly
 - [ ] Qty: 1 (or 2)
 
 ### Rear sheet
