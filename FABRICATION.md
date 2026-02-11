@@ -3,12 +3,12 @@
 ## Phase 1: Generate Artifacts
 
 - [ ] Run `make clean && make all` to regenerate all files from latest source
-- [ ] Verify output files exist:
+- [ ] Verify output files exist in `output/`:
   - [ ] 5 STEP files + 5 DXF files
-  - [ ] `fatif_assembly.step` (color-coded)
-  - [ ] `fatif_nameplate_mockup.png`
-  - [ ] `fatif_top_clip_paint.svg` and `fatif_bottom_clip_paint.svg`
-- [ ] Open `fatif_assembly.step` in a viewer — sanity-check fit and dimensions
+  - [ ] `output/fatif_assembly.step` (color-coded)
+  - [ ] `output/fatif_nameplate_mockup.png`
+  - [ ] `output/fatif_top_clip_paint.svg` and `output/fatif_bottom_clip_paint.svg`
+- [ ] Open `output/fatif_assembly.step` in a viewer — sanity-check fit and dimensions
 - [ ] Open each DXF — verify profiles look correct
 
 ## Phase 2: Order Aluminum Sheets (SendCutSend)
@@ -17,16 +17,15 @@ Go to [sendcutsend.com](https://sendcutsend.com/) and create 3 line items:
 
 ### Front sheet
 
-- [ ] Upload `fatif_front_sheet.dxf`
+- [ ] Upload `output/fatif_front_sheet.dxf`
 - [ ] Material: 6061-T6 Aluminum, .063" (1.60mm)
 - [ ] Finish: Powder coat — matte black (Axalta Black Magic BK120)
-- [ ] Add countersinking: M3 (3.2mm head, 90°) on the 6 screw holes (front face)
 - [ ] Add deburring
 - [ ] Qty: 1 (or 2 for a spare)
 
 ### Middle sheet
 
-- [ ] Upload `fatif_middle_sheet.dxf`
+- [ ] Upload `output/fatif_middle_sheet.dxf`
 - [ ] Material: 2024-T3 Aluminum, .025" (0.64mm)
 - [ ] Finish: None (bare)
 - [ ] Add deburring
@@ -34,7 +33,7 @@ Go to [sendcutsend.com](https://sendcutsend.com/) and create 3 line items:
 
 ### Rear sheet
 
-- [ ] Upload `fatif_rear_sheet.dxf`
+- [ ] Upload `output/fatif_rear_sheet.dxf`
 - [ ] Material: 6061-T6 Aluminum, .100" (2.54mm)
 - [ ] Finish: Black anodize (Type II)
 - [ ] Add tapping: M3x0.5 on all 6 screw holes — OR tap by hand after delivery
@@ -53,7 +52,7 @@ Go to [ponoko.com/laser-cutting](https://www.ponoko.com/laser-cutting):
 
 ### Top clip
 
-- [ ] Upload `fatif_top_clip.dxf`
+- [ ] Upload `output/fatif_top_clip.dxf`
 - [ ] Material: #4 304 Stainless Steel, 1.52mm (.060")
 - [ ] Add bending: 90° bend along the 45° diagonal line at upper-left corner (tab bends up 8mm)
   - [ ] Include a note/drawing showing bend line location and direction
@@ -62,7 +61,7 @@ Go to [ponoko.com/laser-cutting](https://www.ponoko.com/laser-cutting):
 
 ### Bottom clip
 
-- [ ] Upload `fatif_bottom_clip.dxf`
+- [ ] Upload `output/fatif_bottom_clip.dxf`
 - [ ] Material: #4 304 Stainless Steel, 1.52mm (.060")
 - [ ] Add deburring
 - [ ] Qty: 1 (or 2)
@@ -70,8 +69,8 @@ Go to [ponoko.com/laser-cutting](https://www.ponoko.com/laser-cutting):
 ### Painting/silkscreen (both clips)
 
 - [ ] Request silkscreen or painting finishing on both clips
-- [ ] Upload `fatif_top_clip_paint.svg` as artwork for top clip
-- [ ] Upload `fatif_bottom_clip_paint.svg` as artwork for bottom clip
+- [ ] Upload `output/fatif_top_clip_paint.svg` as artwork for top clip
+- [ ] Upload `output/fatif_bottom_clip_paint.svg` as artwork for bottom clip
 - [ ] Specify: matte black paint, even-odd fill rule (letters are cutouts — bare SS shows through)
 - [ ] Note for top clip: paint artwork accounts for bend-line offset; apply paint to flat part BEFORE bending
 - [ ] Note for bottom clip: black oxide M3 pan head screws will cover the screw holes; paint over them
@@ -86,7 +85,7 @@ Go to [ponoko.com/laser-cutting](https://www.ponoko.com/laser-cutting):
 
 Source from McMaster-Carr, Bolt Depot, Amazon, or similar:
 
-- [ ] 2x M3×4mm flat head socket cap screw (ISO 10642), stainless steel — assembly screws
+- [ ] 2x M3×4mm pan head screw (DIN 7985), **black oxide** — assembly screws
 - [ ] 2x M3×6mm pan head screw (DIN 7985), stainless steel — top clip screws
 - [ ] 2x M3×6mm pan head screw (DIN 7985), **black oxide** — bottom clip screws
 - [ ] (Optional) M3 tap + 2.5mm drill bit if tapping rear sheet by hand
@@ -104,7 +103,7 @@ Source from McMaster-Carr, Bolt Depot, Amazon, or similar:
 
 - [ ] Stack: front (powder coat side out) → middle → rear (anodize side in toward camera)
 - [ ] Align all holes
-- [ ] Install 2x M3×4 flat head assembly screws at (±74.75, 0) — should sit flush with front face
+- [ ] Install 2x M3×4 pan head assembly screws at (±74.75, 0) — black oxide, heads on front face
 - [ ] Snug but don't overtighten (aluminum threads)
 
 ### Install clips

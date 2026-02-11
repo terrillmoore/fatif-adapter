@@ -5,7 +5,7 @@ Fatif DS 20x25 Adapter Lensboard — Three-Piece Laminated Design
 Generates STEP and DXF files for laser-cut fabrication (SendCutSend).
 
 Design: Terry Moore / Claude
-Assembly: Three sheets laminated with M3 flat head screws
+Assembly: Three sheets laminated with M3 pan head screws
 
 Materials (as-finished thicknesses from SendCutSend):
   Front:  .063" 6061-T6, powder coated matte black → 1.78mm
@@ -44,6 +44,7 @@ Board retention — Cambo / Crown Graphic style clips:
   Clip material: .060" 304 stainless steel (1.52mm)
 """
 
+import argparse
 import cadquery as cq
 import math
 import os
@@ -79,11 +80,9 @@ GOWLAND_CORNER_R = 3.4      # Gowland board corner radius
 # --- Central through bore (rear + middle sheets) ---
 BORE_DIA = 110.0            # clears Ilex #5 flange with margin
 
-# --- Assembly screws (M3 flat head, countersunk into front sheet) ---
+# --- Assembly screws (M3 pan head, black oxide) ---
 M3_CLEARANCE = 3.4          # M3 clearance hole diameter
 M3_TAP = 2.5                # M3 tap drill diameter
-M3_CSK_DIA = 6.5            # M3 flat head countersink diameter
-M3_CSK_DEPTH = 1.2          # countersink depth (< FRONT_THICK)
 
 # --- Screw placement ---
 # Overlap zone where all three sheets are solid:
@@ -238,18 +237,6 @@ for (x, y) in ALL_SCREW_POSITIONS:
         .extrude(FRONT_THICK + 2)
     )
     front_sheet = front_sheet.cut(hole)
-
-# Countersinks only for assembly screws (clip screws use pan heads
-# that sit on top of the clips, not countersunk into the front sheet)
-for (x, y) in ASSY_SCREW_POSITIONS:
-    csk = (
-        cq.Workplane("XY")
-        .workplane(offset=FRONT_Z_TOP - M3_CSK_DEPTH)
-        .center(x, y)
-        .circle(M3_CSK_DIA / 2)
-        .extrude(M3_CSK_DEPTH + 1)
-    )
-    front_sheet = front_sheet.cut(csk)
 
 
 # ================================================================
@@ -505,7 +492,10 @@ assembly.add(top_clip,     name="top_clip",
 # EXPORT
 # ================================================================
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
+parser = argparse.ArgumentParser(description="Generate Fatif adapter STEP and DXF files")
+parser.add_argument("--output-dir", default=".", help="Output directory for generated files")
+_args = parser.parse_args()
+output_dir = _args.output_dir
 
 individual_parts = {
     "fatif_front_sheet": front_sheet,
@@ -518,12 +508,12 @@ individual_parts = {
 print("\nExporting...")
 for name, part in individual_parts.items():
     # STEP file (3D, with bends for clips)
-    step_path = os.path.join(script_dir, f"{name}.step")
+    step_path = os.path.join(output_dir, f"{name}.step")
     cq.exporters.export(part, step_path)
     print(f"  STEP: {step_path}")
 
     # DXF file (2D profile for laser cutting)
-    dxf_path = os.path.join(script_dir, f"{name}.dxf")
+    dxf_path = os.path.join(output_dir, f"{name}.dxf")
 
     if name in ("fatif_front_sheet", "fatif_middle_sheet", "fatif_rear_sheet"):
         # Sheet parts: section at Z midpoint
@@ -657,7 +647,7 @@ for name, part in individual_parts.items():
     print(f"  DXF:  {dxf_path}")
 
 # Assembly STEP (color-coded)
-assy_path = os.path.join(script_dir, "fatif_assembly.step")
+assy_path = os.path.join(output_dir, "fatif_assembly.step")
 assembly.save(assy_path)
 print(f"  STEP: {assy_path}")
 
@@ -693,7 +683,7 @@ print(f"  Laminated:      {FRONT_THICK}+{MIDDLE_THICK}+{REAR_THICK} = "
       f"{TOTAL_THICKNESS:.2f}mm total")
 print(f"  Lip:            {LIP_THICK:.2f}mm (front+middle overhang "
       f"{STEP_WIDTH}mm beyond rear)  [limit: 2.50mm]")
-print(f"  Assembly screws: 2x M3 flat head at (±{ASSY_SCREW_R}, 0)mm")
+print(f"  Assembly screws: 2x M3 pan head at (±{ASSY_SCREW_R}, 0)mm")
 print(f"  Bottom clip:    {CLIP_BAR_LENGTH}mm bar, "
       f"{BOT_CLIP_WIDTH}mm wide, fixed, {CLIP_OVERLAP}mm overlap")
 print(f"  Top clip:       {CLIP_BAR_LENGTH}mm dog-bone bar + 45° rectangular tab "

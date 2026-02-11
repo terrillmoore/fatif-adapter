@@ -4,6 +4,7 @@ VENV := .venv
 PYTHON := $(VENV)/bin/python
 PIP := $(VENV)/bin/pip
 SCRIPT := fatif_adapter_cadquery.py
+OUTPUT_DIR ?= output
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
@@ -20,16 +21,19 @@ $(VENV)/.installed:
 all: build mockup artwork ## Generate all artifacts (STEP, DXF, PNG, SVG)
 
 build: $(VENV)/.installed ## Generate STEP and DXF files
-	$(PYTHON) $(SCRIPT)
+	@mkdir -p $(OUTPUT_DIR)
+	$(PYTHON) $(SCRIPT) --output-dir $(OUTPUT_DIR)
 
 mockup: $(VENV)/.installed ## Generate nameplate mockup PNG
-	$(PYTHON) generate_nameplate_mockup.py
+	@mkdir -p $(OUTPUT_DIR)
+	$(PYTHON) generate_nameplate_mockup.py --output-dir $(OUTPUT_DIR)
 
 artwork: $(VENV)/.installed ## Generate paint artwork SVGs
-	$(PYTHON) generate_paint_artwork.py
+	@mkdir -p $(OUTPUT_DIR)
+	$(PYTHON) generate_paint_artwork.py --output-dir $(OUTPUT_DIR)
 
 pdf: build ## Convert DXF files to PDF for viewing
-	$(PYTHON) dxf2pdf.py *.dxf
+	$(PYTHON) dxf2pdf.py --output-dir $(OUTPUT_DIR) $(OUTPUT_DIR)/*.dxf
 
-clean: ## Remove generated STEP, STL, DXF, PDF, PNG, and SVG files
-	rm -f *.step *.stl *.dxf *.pdf fatif_nameplate_mockup.png *_paint.svg
+clean: ## Remove generated output directory
+	rm -rf $(OUTPUT_DIR)

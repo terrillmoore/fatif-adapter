@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Generate SVG paint artwork for clip nameplates.
 
+
 Output:
   fatif_top_clip_paint.svg    — "fatif" paint mask for top clip
   fatif_bottom_clip_paint.svg — "GOWLAND" paint mask for bottom clip
@@ -18,6 +19,8 @@ Usage:
   source .venv/bin/activate && python3 generate_paint_artwork.py
 """
 
+import argparse
+import os
 import numpy as np
 from matplotlib.textpath import TextPath
 from matplotlib.font_manager import FontProperties
@@ -254,7 +257,7 @@ def svg_footer():
 # Bottom clip SVG
 # ---------------------------------------------------------------------------
 
-def generate_bottom_clip():
+def generate_bottom_clip(output_dir="."):
     """Generate paint artwork SVG for bottom clip ("GOWLAND")."""
     # Clip outline (flat pattern: X=[-45,45], Y=[0,10], R2)
     clip_verts = [(-HB, 0), (HB, 0), (HB, BOT_W), (-HB, BOT_W)]
@@ -294,7 +297,7 @@ def generate_bottom_clip():
 
     svg += svg_footer()
 
-    path = "fatif_bottom_clip_paint.svg"
+    path = os.path.join(output_dir, "fatif_bottom_clip_paint.svg")
     with open(path, "w") as f:
         f.write(svg)
     print(f"Saved {path}")
@@ -304,7 +307,7 @@ def generate_bottom_clip():
 # Top clip SVG
 # ---------------------------------------------------------------------------
 
-def generate_top_clip():
+def generate_top_clip(output_dir="."):
     """Generate paint artwork SVG for top clip ("fatif")."""
     # Clip outline (flat pattern dog-bone with tab cutoff)
     # Vertices: inner edge at Y=0, outer edge at Y=14
@@ -396,7 +399,7 @@ def generate_top_clip():
 
     svg += svg_footer()
 
-    path = "fatif_top_clip_paint.svg"
+    path = os.path.join(output_dir, "fatif_top_clip_paint.svg")
     with open(path, "w") as f:
         f.write(svg)
     print(f"Saved {path}")
@@ -406,10 +409,13 @@ def generate_top_clip():
 # Main
 # ---------------------------------------------------------------------------
 
-def main():
-    generate_bottom_clip()
-    generate_top_clip()
+def main(output_dir="."):
+    generate_bottom_clip(output_dir)
+    generate_top_clip(output_dir)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Generate paint artwork SVGs")
+    parser.add_argument("--output-dir", default=".", help="Output directory")
+    args = parser.parse_args()
+    main(args.output_dir)

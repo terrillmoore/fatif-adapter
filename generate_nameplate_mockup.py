@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Generate a two-panel mockup of the Fatif adapter with painted nameplate on the top clip."""
 
+import argparse
+import os
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
@@ -538,7 +540,7 @@ def draw_bot_detail_geom(ax):
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def main():
+def main(output_dir="."):
     fig = plt.figure(figsize=(10, 18), dpi=SAVE_DPI, facecolor="white")
 
     ax1 = fig.add_axes([0.05, 0.50, 0.90, 0.47])
@@ -566,11 +568,14 @@ def main():
                      paint_h_mm=_gow_h, color=STAINLESS_BRIGHT,
                      font_prop=futura_light, spacing_em=0.62)
 
-    out = "fatif_nameplate_mockup.png"
+    out = os.path.join(output_dir, "fatif_nameplate_mockup.png")
     fig.savefig(out, dpi=SAVE_DPI, facecolor="white")
     print(f"Saved {out}")
     plt.close(fig)
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Generate nameplate mockup PNG")
+    parser.add_argument("--output-dir", default=".", help="Output directory")
+    args = parser.parse_args()
+    main(args.output_dir)

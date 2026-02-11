@@ -6,7 +6,7 @@ fabrication via [SendCutSend](https://sendcutsend.com/).
 
 ## Design
 
-Three aluminum sheets laminated with M3 flat head screws:
+Three aluminum sheets laminated with M3 screws:
 
 | Sheet | Size | Material | Thickness | Finish | Feature |
 |-------|------|----------|-----------|--------|---------|
@@ -17,7 +17,7 @@ Three aluminum sheets laminated with M3 flat head screws:
 - **Total thickness:** 4.98mm
 - **Lip:** Front + middle overhang rear by 5.75mm, creating the 2.42mm lip for Fatif spring clips (limit: 2.50mm)
 - **Board retention:** Cambo / Crown Graphic style clips (see below)
-- **Assembly:** 2x M3 flat head screws at (±74.75, 0) + 4x M3 clip screws
+- **Assembly:** 2x M3 pan head screws at (±74.75, 0) + 4x M3 clip screws
 
 The CadQuery script generates individual STEP and DXF files for each part,
 plus a combined assembly STEP for visualization.
@@ -66,7 +66,7 @@ methods.
 
 | Qty | Fastener | Length | Use | Notes |
 |-----|----------|--------|-----|-------|
-| 2 | M3 flat head socket cap screw (ISO 10642), stainless | M3×4 | Assembly screws at (±74.75, 0) | Countersunk into front sheet; ~1.6mm thread engagement in tapped rear |
+| 2 | M3 pan head screw (DIN 7985), **black oxide** | M3×4 | Assembly screws at (±74.75, 0) | Through front + middle, ~1.6mm thread engagement in tapped rear |
 | 2 | M3 pan head screw (DIN 7985), stainless | M3×6 | Top clip screws at (±32.5, 74) | Through clip + front + middle, ~2.1mm into tapped rear |
 | 2 | M3 pan head screw (DIN 7985), **black oxide** | M3×6 | Bottom clip screws at (±25, -72.5) | Same stack; black to blend with painted clip |
 
@@ -122,6 +122,9 @@ make init      # create venv, install CadQuery
 make all       # generate everything (STEP, DXF, PNG, SVG)
 ```
 
+All generated files go to the `output/` directory (configurable via
+`make all OUTPUT_DIR=custom_dir`).
+
 Individual targets: `make build` (STEP + DXF), `make mockup` (PNG),
 `make artwork` (paint SVGs).
 
@@ -136,17 +139,19 @@ Everything else is installed automatically by `make init`.
 
 ### Generated Files
 
+All files are written to `output/` (override with `OUTPUT_DIR`).
+
 | File | Description |
 |------|-------------|
-| `fatif_front_sheet.step/.dxf` | Front sheet with cutout and screw holes |
-| `fatif_middle_sheet.step/.dxf` | Middle light-seal sheet with bore |
-| `fatif_rear_sheet.step/.dxf` | Rear sheet with bore and tapped holes |
-| `fatif_bottom_clip.step/.dxf` | Fixed bottom retention clip (flat pattern) |
-| `fatif_top_clip.step/.dxf` | Sliding top retention clip with tab (flat pattern) |
-| `fatif_assembly.step` | Combined assembly for visualization |
-| `fatif_nameplate_mockup.png` | Three-panel mockup showing both nameplates |
-| `fatif_top_clip_paint.svg` | Paint artwork for top clip ("fatif") |
-| `fatif_bottom_clip_paint.svg` | Paint artwork for bottom clip ("GOWLAND") |
+| `output/fatif_front_sheet.step/.dxf` | Front sheet with cutout and screw holes |
+| `output/fatif_middle_sheet.step/.dxf` | Middle light-seal sheet with bore |
+| `output/fatif_rear_sheet.step/.dxf` | Rear sheet with bore and tapped holes |
+| `output/fatif_bottom_clip.step/.dxf` | Fixed bottom retention clip (flat pattern) |
+| `output/fatif_top_clip.step/.dxf` | Sliding top retention clip with tab (flat pattern) |
+| `output/fatif_assembly.step` | Combined assembly for visualization |
+| `output/fatif_nameplate_mockup.png` | Three-panel mockup showing both nameplates |
+| `output/fatif_top_clip_paint.svg` | Paint artwork for top clip ("fatif") |
+| `output/fatif_bottom_clip_paint.svg` | Paint artwork for bottom clip ("GOWLAND") |
 
 ### Adjusting Dimensions
 
