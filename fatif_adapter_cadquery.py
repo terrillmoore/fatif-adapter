@@ -148,6 +148,15 @@ FRONT_Z_TOP = TOTAL_THICKNESS
 # Lip thickness = front + middle (these two sheets overhang the rear)
 LIP_THICK = FRONT_THICK + MIDDLE_THICK  # = 2.42mm (≤ 2.50mm clip limit)
 
+# --- CNC single-piece variant ---
+# Single 6061-T6 billet replaces all three sheets.
+# Perimeter step milled from rear; board pocket milled from front.
+CNC_BILLET_THICK = 6.35         # 0.250" 6061-T6
+CNC_LIP_THICK = LIP_THICK       # 2.42mm (match laminate lip)
+CNC_BOARD_POCKET_DEPTH = FRONT_THICK  # 1.78mm (board sits flush with front face)
+CNC_M3_ROLL_TAP = 2.75          # M3×0.5 roll tap drill (SCS min 0.1082"/2.748mm)
+CNC_TAP_DEPTH = 5.0             # M3 tap drill depth from front face
+
 
 # ================================================================
 # HELPER: rounded rectangle sketch
@@ -470,10 +479,87 @@ for pt in _tab_corner_pts:
 
 
 # ================================================================
-# PART 6: ASSEMBLY (color-coded visualization)
+# PART 6: CNC SINGLE-PIECE BODY (alternative to three-piece laminate)
 # ================================================================
 
-print("  [6/6] Assembly: combining all parts (color-coded)")
+# Single 6061-T6 billet with milled features:
+#   - Rear perimeter step: creates lip (5.75mm wide, 2.42mm thick)
+#   - Front board pocket: 139mm sq (R3.4), 1.78mm deep (board sits flush)
+#   - Through bore: 110mm dia
+#   - Blind M3 tap holes for clip screws (no assembly screws needed)
+#
+# Z convention: z=0 rear (camera side), z=CNC_BILLET_THICK front (scene side)
+
+print("\nBuilding CNC single-piece variant...\n")
+print("  CNC body: %.1fmm sq, R%.2f, %.2fmm thick (0.250\" 6061-T6)"
+      % (BOARD_SIZE, BOARD_CORNER_R, CNC_BILLET_THICK))
+
+# Base block — full outer profile at billet thickness
+cnc_body = (
+    rounded_rect(cq.Workplane("XY"), BOARD_SIZE, BOARD_CORNER_R)
+    .extrude(CNC_BILLET_THICK)
+)
+
+# Rear perimeter step — thin the lip region.
+# Cut the ring between outer (171.5mm) and inner (160mm) profiles from z=0.
+cnc_step_depth = CNC_BILLET_THICK - CNC_LIP_THICK  # 3.93mm
+step_outer = (
+    rounded_rect(cq.Workplane("XY").workplane(offset=-0.1),
+                 BOARD_SIZE, BOARD_CORNER_R)
+    .extrude(cnc_step_depth + 0.1)
+)
+step_inner = (
+    rounded_rect(cq.Workplane("XY").workplane(offset=-0.1),
+                 REAR_SIZE, REAR_CORNER_R)
+    .extrude(cnc_step_depth + 0.1)
+)
+step_ring = step_outer.cut(step_inner)
+cnc_body = cnc_body.cut(step_ring)
+print("    Rear step: %.1fmm sq (R%.2f) to %.1fmm sq (R%.1f), %.2fmm deep"
+      % (BOARD_SIZE, BOARD_CORNER_R, REAR_SIZE, REAR_CORNER_R, cnc_step_depth))
+print("    Lip: %.2fmm thick, %.2fmm wide" % (CNC_LIP_THICK, STEP_WIDTH))
+
+# Front board pocket — Gowland board seats here, flush with front face.
+cnc_pocket_z = CNC_BILLET_THICK - CNC_BOARD_POCKET_DEPTH
+pocket_cut = (
+    rounded_rect(cq.Workplane("XY").workplane(offset=cnc_pocket_z - 0.1),
+                 GOWLAND_SIZE, GOWLAND_CORNER_R)
+    .extrude(CNC_BOARD_POCKET_DEPTH + 0.2)
+)
+cnc_body = cnc_body.cut(pocket_cut)
+print("    Board pocket: %.0fmm sq (R%.1f), %.2fmm deep from front face"
+      % (GOWLAND_SIZE, GOWLAND_CORNER_R, CNC_BOARD_POCKET_DEPTH))
+
+# Through bore — 110mm dia, full depth
+cnc_bore = (
+    cq.Workplane("XY").workplane(offset=-0.1)
+    .circle(BORE_DIA / 2)
+    .extrude(CNC_BILLET_THICK + 0.2)
+)
+cnc_body = cnc_body.cut(cnc_bore)
+print("    Through bore: dia %.0fmm" % BORE_DIA)
+
+# Clip screw tap holes — blind from front face, M3 tap drill (2.5mm)
+CNC_CLIP_SCREW_POSITIONS = BOTTOM_CLIP_SCREW_POSITIONS + TOP_CLIP_SCREW_POSITIONS
+for (x, y) in CNC_CLIP_SCREW_POSITIONS:
+    tap_hole = (
+        cq.Workplane("XY")
+        .workplane(offset=CNC_BILLET_THICK - CNC_TAP_DEPTH - 0.1)
+        .center(x, y)
+        .circle(CNC_M3_ROLL_TAP / 2)
+        .extrude(CNC_TAP_DEPTH + 0.2)
+    )
+    cnc_body = cnc_body.cut(tap_hole)
+print("    Tap holes: 4x M3 roll tap (%.2fmm drill, %.1fmm deep from front face)"
+      % (CNC_M3_ROLL_TAP, CNC_TAP_DEPTH))
+
+
+# ================================================================
+# ASSEMBLIES (color-coded visualization)
+# ================================================================
+
+# --- Laminate assembly ---
+print("\n  Laminate assembly: combining all laminate parts (color-coded)")
 
 assembly = cq.Assembly(name="fatif_adapter")
 assembly.add(rear_sheet,   name="rear_sheet",
@@ -486,6 +572,23 @@ assembly.add(bottom_clip,  name="bottom_clip",
              color=cq.Color(0.72, 0.45, 0.20))    # copper (for visibility)
 assembly.add(top_clip,     name="top_clip",
              color=cq.Color(0.72, 0.45, 0.20))    # copper (for visibility)
+
+# --- CNC assembly ---
+# Clips sit on the CNC body front face (z=CNC_BILLET_THICK) instead of
+# z=FRONT_Z_TOP.  Translate clips by the Z difference.
+print("  CNC assembly: CNC body + clips (color-coded)")
+
+_clip_z_shift = CNC_BILLET_THICK - FRONT_Z_TOP  # shift clips to CNC front face
+
+cnc_assembly = cq.Assembly(name="fatif_adapter_cnc")
+cnc_assembly.add(cnc_body, name="cnc_body",
+                 color=cq.Color(0.12, 0.12, 0.14))   # near-black (anodized)
+cnc_assembly.add(bottom_clip, name="bottom_clip",
+                 color=cq.Color(0.72, 0.45, 0.20),
+                 loc=cq.Location((0, 0, _clip_z_shift)))
+cnc_assembly.add(top_clip, name="top_clip",
+                 color=cq.Color(0.72, 0.45, 0.20),
+                 loc=cq.Location((0, 0, _clip_z_shift)))
 
 
 # ================================================================
@@ -658,13 +761,25 @@ assy_path = os.path.join(output_dir, "fatif_assembly.step")
 assembly.save(assy_path)
 print(f"  STEP: {assy_path}")
 
+# CNC body STEP (for SendCutSend upload)
+cnc_body_path = os.path.join(output_dir, "fatif_cnc_body.step")
+cq.exporters.export(cnc_body, cnc_body_path)
+print(f"  STEP: {cnc_body_path}")
+
+# CNC assembly STEP (color-coded)
+cnc_assy_path = os.path.join(output_dir, "fatif_cnc_assembly.step")
+cnc_assembly.save(cnc_assy_path)
+print(f"  STEP: {cnc_assy_path}")
+
 # ================================================================
 # BOUNDING BOX CHECKS
 # ================================================================
 
 print("\n" + "=" * 60)
 print("Bounding box verification:")
-for name, part in individual_parts.items():
+all_parts_for_bb = dict(individual_parts)
+all_parts_for_bb["fatif_cnc_body"] = cnc_body
+for name, part in all_parts_for_bb.items():
     bb = part.val().BoundingBox()
     print(f"  {name}:")
     print(f"    X: {bb.xmin:.2f} to {bb.xmax:.2f}  ({bb.xmax - bb.xmin:.2f}mm)")
@@ -708,7 +823,28 @@ print(f"  Materials:      6061-T6 (front/rear), 2024-T3 (middle), "
 print(f"  Finishes:       Powder coat (front), bare (middle), "
       f"black anodize (rear), bare (clips)")
 print("=" * 60)
-print("\nFiles ready for SendCutSend upload (STEP for quoting, DXF for cutting)")
+
+print("\n" + "=" * 60)
+print("Design summary — CNC Single-Piece Alternative:")
+print(f"  Body:           {BOARD_SIZE}x{BOARD_SIZE}mm, R{BOARD_CORNER_R}, "
+      f"{CNC_BILLET_THICK}mm (0.250\" 6061-T6 black anodized)")
+print(f"  Rear step:      {REAR_SIZE}x{REAR_SIZE}mm (R{REAR_CORNER_R}) inner, "
+      f"{cnc_step_depth:.2f}mm deep")
+print(f"  Lip:            {CNC_LIP_THICK:.2f}mm thick, {STEP_WIDTH}mm wide  "
+      f"[limit: 2.50mm]")
+print(f"  Board pocket:   {GOWLAND_SIZE}x{GOWLAND_SIZE}mm (R{GOWLAND_CORNER_R}), "
+      f"{CNC_BOARD_POCKET_DEPTH:.2f}mm deep from front face")
+print(f"  Through bore:   dia {BORE_DIA}mm")
+print(f"  Clip screws:    4x M3 pan head (roll tap drill {CNC_M3_ROLL_TAP}mm, "
+      f"{CNC_TAP_DEPTH:.0f}mm deep)")
+print(f"  Finish:         Black Type II anodize")
+print(f"  Part count:     5 (body + 2 clips + 4 screws) "
+      f"vs laminate 8 (3 sheets + 2 clips + 6 screws)")
+print("=" * 60)
+
+print("\nFiles ready for SendCutSend upload:")
+print("  Laminate: STEP for quoting, DXF for laser cutting")
+print("  CNC body: fatif_cnc_body.step (upload directly for CNC quote)")
 print("Note: Clip DXFs show flat patterns (pre-bend).")
 print(f"  Top clip: bend 90° up along 45° diagonal at upper-left corner")
 print(f"    Bend line (flat coords): (-{int(hb - TAB_BEND_RUN)}, {int(TOP_CLIP_WIDE)}) "
