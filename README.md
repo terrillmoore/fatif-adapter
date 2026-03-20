@@ -1,10 +1,13 @@
 # Fatif DS 20x25 Adapter Lensboard
 
-A three-piece laminated adapter that lets Gowland 8x10 lensboards mount in a
-Fatif DS 20x25 large-format camera front standard. Designed for laser-cut
-fabrication via [SendCutSend](https://sendcutsend.com/).
+An adapter that lets Gowland 8x10 lensboards mount in a Fatif DS 20x25
+large-format camera front standard. Two design variants: three-piece laminate
+(laser cut) and single-piece CNC milled. Both fabricated via
+[SendCutSend](https://sendcutsend.com/).
 
 ## Design
+
+### Three-piece laminate (laser cut)
 
 Three aluminum sheets laminated with M3 screws:
 
@@ -21,6 +24,26 @@ Three aluminum sheets laminated with M3 screws:
 
 The CadQuery script generates individual STEP and DXF files for each part,
 plus a combined assembly STEP for visualization.
+
+### CNC single-piece alternative
+
+A single 6061-T6 billet replaces all three sheets, eliminating the middle
+sheet, 2 assembly screws, and inter-sheet alignment. CNC machined by
+SendCutSend (upload STEP file directly).
+
+| Feature | Spec |
+|---------|------|
+| Material | 0.250" (6.35mm) 6061-T6 billet |
+| Outer profile | 171.5mm sq, R50.75 (same as laminate) |
+| Rear perimeter step | 160mm sq (R45) inner, 3.93mm deep — creates 2.42mm lip |
+| Front board pocket | 139mm sq (R3.4), 1.78mm deep — Gowland board sits flush |
+| Through bore | 110mm dia |
+| Screw holes | 4x M3 blind roll-tap (2.75mm pilot, 5mm deep) — clip screws only |
+| Finish | Black Type II anodize (no powder coat available for CNC) |
+
+- **Part count:** 5 (body + 2 clips + 4 screws) vs laminate's 8
+- **Light seal:** Continuous machined pocket floor — no laminate gaps at corners
+- **Trade-off:** ~3x cost vs laminate ($372 vs $117 at qty 1, March 2026 pricing)
 
 ### Clip design
 
@@ -62,7 +85,7 @@ to better match the engraved lettering on original Gowland front standards.
 Paint artwork SVGs (`make artwork`) provide vector outlines for any of these
 methods.
 
-### Hardware
+### Hardware (laminate variant)
 
 | Qty | Fastener | Length | Use | Notes |
 |-----|----------|--------|-----|-------|
@@ -73,18 +96,31 @@ methods.
 All 6 screws laminate through all three sheets into tapped holes in the rear
 sheet (M3×0.5, tap drill 2.5mm).
 
+### Hardware (CNC variant)
+
+| Qty | Fastener | Length | Use | Notes |
+|-----|----------|--------|-----|-------|
+| 2 | M3 pan head screw (DIN 7985), stainless | M3×6 | Top clip screws at (±32.5, 74) | Through clip into blind roll-tapped hole in body |
+| 2 | M3 pan head screw (DIN 7985), **black oxide** | M3×6 | Bottom clip screws at (±25, -72.5) | Same; black to blend with painted clip |
+
+4 screws total. No assembly screws needed. Roll-tap pilot holes are 2.75mm
+(not 2.5mm cut-tap) per SendCutSend CNC requirements.
+
 ### Fabrication notes
 
-- **Vendor:** [SendCutSend](https://sendcutsend.com/) for laser cutting,
-  powder coat, and anodize. [Ponoko](https://www.ponoko.com/) is an
-  alternative for 304 SS clips (also offers painting for logo application).
+- **Vendor:** [SendCutSend](https://sendcutsend.com/) for laser cutting
+  (laminate) or CNC machining (single-piece), plus powder coat and anodize.
+  [Ponoko](https://www.ponoko.com/) is an alternative for 304 SS clips
+  (also offers painting for logo application).
 - **Deburring:** Specify deburring on all parts, especially clip edges
   that will be handled during board changes.
 - **Clip DXFs** show 2D profiles (flat patterns for the top clip, outline
   for the bottom clip). The top clip has a single 45° rectangular tab at
   the upper-left corner; bend 90° up along the diagonal bend line.
-- **Tapping:** Rear sheet M3 holes are tap drill size (2.5mm). Specify M3×0.5
-  tapping, or tap by hand after receiving parts.
+- **Tapping (laminate):** Rear sheet M3 holes are tap drill size (2.5mm).
+  Specify M3×0.5 tapping, or tap by hand after receiving parts.
+- **Tapping (CNC):** Holes are 2.75mm (roll-tap pilot). Select M3×0.5
+  roll tap in the SendCutSend tapping setup. Apply to all 4 holes.
 
 ### Surface finish rationale
 
@@ -110,6 +146,11 @@ The front sheet is powder coated because it faces outward (not a stray-light
 concern inside the camera) and benefits from the more durable, thicker finish
 for handling. The middle sheet needs no finish since it is sandwiched between
 the other two.
+
+The CNC single-piece variant uses black Type II anodize on all surfaces
+(powder coat is not available for SendCutSend CNC parts). This is acceptable
+since anodize provides adequate stray-light performance on both the camera-
+facing and outward-facing surfaces.
 
 References:
 - [TAMU Reflectance of Black Materials Catalog](https://instrumentation.tamu.edu/reflectance-black/)
@@ -148,7 +189,9 @@ All files are written to `output/` (override with `OUTPUT_DIR`).
 | `output/fatif_rear_sheet.step/.dxf` | Rear sheet with bore and tapped holes |
 | `output/fatif_bottom_clip.step/.dxf` | Fixed bottom retention clip (flat pattern) |
 | `output/fatif_top_clip.step/.dxf` | Sliding top retention clip with tab (flat pattern) |
-| `output/fatif_assembly.step` | Combined assembly for visualization |
+| `output/fatif_assembly.step` | Laminate assembly for visualization |
+| `output/fatif_cnc_body.step` | CNC single-piece body (upload to SCS for quote) |
+| `output/fatif_cnc_assembly.step` | CNC assembly with clips for visualization |
 | `output/fatif_nameplate_mockup.png` | Three-panel mockup showing both nameplates |
 | `output/fatif_top_clip_paint.svg` | Paint artwork for top clip ("fatif") |
 | `output/fatif_bottom_clip_paint.svg` | Paint artwork for bottom clip ("GOWLAND") |

@@ -3,5 +3,8 @@
 __pycache__/
 *.pyc
 
+# Scratch/working files
+scratch/
+
 # Generated output (regenerate via: make all)
 output/

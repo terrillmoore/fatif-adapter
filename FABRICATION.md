@@ -4,14 +4,17 @@
 
 - [ ] Run `make clean && make all` to regenerate all files from latest source
 - [ ] Verify output files exist in `output/`:
-  - [ ] 5 STEP files + 5 DXF files
-  - [ ] `output/fatif_assembly.step` (color-coded)
+  - [ ] 5 STEP files + 5 DXF files (laminate variant)
+  - [ ] `output/fatif_cnc_body.step` and `output/fatif_cnc_assembly.step` (CNC variant)
+  - [ ] `output/fatif_assembly.step` (color-coded laminate assembly)
   - [ ] `output/fatif_nameplate_mockup.png`
   - [ ] `output/fatif_top_clip_paint.svg` and `output/fatif_bottom_clip_paint.svg`
-- [ ] Open `output/fatif_assembly.step` in a viewer — sanity-check fit and dimensions
+- [ ] Open assembly STEP(s) in a viewer — sanity-check fit and dimensions
 - [ ] Open each DXF — verify profiles look correct
 
-## Phase 2: Order Aluminum Sheets (SendCutSend)
+## Phase 2: Order Body (choose one variant)
+
+### Option A: Three-Piece Laminate (SendCutSend laser cut)
 
 Go to [sendcutsend.com](https://sendcutsend.com/) and create 3 line items:
 
@@ -44,6 +47,22 @@ Go to [sendcutsend.com](https://sendcutsend.com/) and create 3 line items:
 
 - [ ] Verify all 3 parts show correct outer dimensions (~171.5mm / ~160mm)
 - [ ] Note: powder coat adds ~0.18mm; anodize adds ~0.02mm — already accounted for in design
+- [ ] Save order confirmation / screenshot
+
+### Option B: CNC Single-Piece Body (SendCutSend CNC machining)
+
+Go to [sendcutsend.com](https://sendcutsend.com/) and upload the STEP file:
+
+- [ ] Upload `output/fatif_cnc_body.step`
+- [ ] Material: 6061-T6 Aluminum (auto-detected as CNC billet part)
+- [ ] Add tapping: select all 4 holes, M3×0.5 Roll Tap
+  - [ ] Verify holes show as 0.1083" / 2.75mm diameter
+- [ ] Add finish: Black Type II anodize
+- [ ] Qty: 1
+- [ ] Note: no DXF needed, no middle/front sheets, no assembly screws
+
+### Before checkout (either variant)
+
 - [ ] Save order confirmation / screenshot
 
 ## Phase 3: Order Stainless Steel Clips (Ponoko)
@@ -85,21 +104,32 @@ Go to [ponoko.com/laser-cutting](https://www.ponoko.com/laser-cutting):
 
 Source from McMaster-Carr, Bolt Depot, Amazon, or similar:
 
+**Laminate variant (6 screws):**
 - [ ] 2x M3×4mm pan head screw (DIN 7985), **black oxide** — assembly screws
 - [ ] 2x M3×6mm pan head screw (DIN 7985), stainless steel — top clip screws
 - [ ] 2x M3×6mm pan head screw (DIN 7985), **black oxide** — bottom clip screws
 - [ ] (Optional) M3 tap + 2.5mm drill bit if tapping rear sheet by hand
 
+**CNC variant (4 screws):**
+- [ ] 2x M3×6mm pan head screw (DIN 7985), stainless steel — top clip screws
+- [ ] 2x M3×6mm pan head screw (DIN 7985), **black oxide** — bottom clip screws
+
 ## Phase 5: Assembly
 
-### Prep
+### Prep (laminate)
 
 - [ ] Inspect all parts for burrs, defects, dimensional accuracy
 - [ ] Test-fit Gowland board in front sheet cutout (should be ~0.5mm clearance per side)
 - [ ] Verify bore alignment by stacking sheets without screws
 - [ ] If rear sheet is not tapped: hand-tap 6x M3×0.5 holes
 
-### Laminate sheets
+### Prep (CNC)
+
+- [ ] Inspect body for burrs, defects, dimensional accuracy
+- [ ] Test-fit Gowland board in front pocket (should be ~0.5mm clearance per side)
+- [ ] Verify tapped holes accept M3 screws
+
+### Laminate sheets (skip for CNC)
 
 - [ ] Stack: front (powder coat side out) → middle → rear (anodize side in toward camera)
 - [ ] Align all holes
