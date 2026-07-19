@@ -18,7 +18,7 @@ make clean     # rm -rf output/
 Output directory is configurable: `make all OUTPUT_DIR=custom_dir`.
 
 Individual targets: `build` (STEP+DXF), `mockup` (PNG), `artwork` (SVGs),
-`pdf` (DXF-to-PDF conversion).
+`blanks` (corner-radius test comb DXF), `pdf` (DXF-to-PDF conversion).
 
 ## File Layout
 
@@ -27,6 +27,7 @@ Individual targets: `build` (STEP+DXF), `mockup` (PNG), `artwork` (SVGs),
 | `fatif_adapter_cadquery.py` | Main CadQuery script: laminate + CNC body models, DXF flat patterns, assembly STEPs |
 | `generate_nameplate_mockup.py` | Three-panel matplotlib mockup of clip nameplates |
 | `generate_paint_artwork.py` | Paint artwork SVGs (even-odd compound paths for knockout text) |
+| `generate_corner_comb.py` | Corner-radius test comb DXF (verify casting corners pre-refab) |
 | `dxf2pdf.py` | DXF-to-PDF converter using ezdxf + matplotlib |
 | `Makefile` | Build system; all scripts accept `--output-dir` |
 | `README.md` | Design docs, hardware BOM, fabrication notes |

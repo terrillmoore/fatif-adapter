@@ -1,4 +1,4 @@
-.PHONY: help init all build mockup artwork pdf clean
+.PHONY: help init all build mockup artwork blanks pdf clean
 
 VENV := .venv
 PYTHON := $(VENV)/bin/python
@@ -31,6 +31,10 @@ mockup: $(VENV)/.installed ## Generate nameplate mockup PNG
 artwork: $(VENV)/.installed ## Generate paint artwork SVGs
 	@mkdir -p $(OUTPUT_DIR)
 	$(PYTHON) generate_paint_artwork.py --output-dir $(OUTPUT_DIR)
+
+blanks: $(VENV)/.installed ## Generate corner-radius test comb DXF
+	@mkdir -p $(OUTPUT_DIR)
+	$(PYTHON) generate_corner_comb.py --output-dir $(OUTPUT_DIR)
 
 pdf: build ## Convert DXF files to PDF for viewing
 	$(PYTHON) dxf2pdf.py --output-dir $(OUTPUT_DIR) $(OUTPUT_DIR)/*.dxf
