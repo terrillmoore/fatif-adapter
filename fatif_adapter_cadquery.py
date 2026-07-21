@@ -82,8 +82,8 @@ REAR_CORNER_R = BOARD_CORNER_R - STEP_WIDTH    # = 45.0
 # Size for a ~0.30mm/side finished slip fit:
 #   GOWLAND_SIZE     = 138.5 + 4*coat + 2*clearance = 138.5 + 0.652 + 0.60
 #   GOWLAND_CORNER_R = board_R + (2*coat + clearance) = 3.462 + 0.626
-# (CNC variant reuses these; its pocket is anodized not coated, so it ends
-#  up ~0.14mm/side looser -- still a fine slip fit.)
+# (The CNC variant is anodized, not powder coated, so it uses its own smaller
+#  pocket -- see CNC_POCKET_SIZE / CNC_POCKET_R below.)
 GOWLAND_SIZE = 139.75       # cutout size (was 139.0 -- rubbed after coating)
 GOWLAND_CORNER_R = 4.09     # cutout corner R = board R3.46 + 0.626 clearance
 
@@ -166,6 +166,18 @@ CNC_LIP_THICK = LIP_THICK       # 2.42mm (match laminate lip)
 CNC_BOARD_POCKET_DEPTH = FRONT_THICK  # 1.78mm (board sits flush with front face)
 CNC_M3_ROLL_TAP = 2.75          # M3×0.5 roll tap drill (SCS min 0.1082"/2.748mm)
 CNC_TAP_DEPTH = 5.0             # M3 tap drill depth from front face
+
+# Board pocket fit — differs from the laminate cutout (GOWLAND_SIZE). The
+# Gowland board is powder coated in both variants (~0.163mm/surface), but the
+# CNC body is anodized (~0.02mm/surface), NOT powder coated like the laminate
+# front sheet. Its pocket wall loses far less material to its own finish, so
+# the pocket must be cut SMALLER than GOWLAND_SIZE to hit the same ~0.30mm/side
+# finished slip fit; reusing GOWLAND_SIZE would leave the board ~0.14mm/side
+# looser. See the GOWLAND_SIZE derivation above.
+#   CNC_POCKET_SIZE = 138.5 + 2*(0.163 board + 0.02 anodize + 0.30 clear) = 139.47
+#   CNC_POCKET_R    = 3.462 + (0.163 + 0.02 + 0.30)                       = 3.95
+CNC_POCKET_SIZE = 139.47        # < GOWLAND_SIZE (anodized wall, not powder coat)
+CNC_POCKET_R = 3.95             # board R3.462 + 0.483 per-side clearance
 
 
 # ================================================================
@@ -494,7 +506,7 @@ for pt in _tab_corner_pts:
 
 # Single 6061-T6 billet with milled features:
 #   - Rear perimeter step: creates lip (5.75mm wide, 2.42mm thick)
-#   - Front board pocket: 139mm sq (R3.4), 1.78mm deep (board sits flush)
+#   - Front board pocket: 139.47mm sq (R3.95), 1.78mm deep (board sits flush)
 #   - Through bore: 110mm dia
 #   - Blind M3 tap holes for clip screws (no assembly screws needed)
 #
@@ -533,12 +545,12 @@ print("    Lip: %.2fmm thick, %.2fmm wide" % (CNC_LIP_THICK, STEP_WIDTH))
 cnc_pocket_z = CNC_BILLET_THICK - CNC_BOARD_POCKET_DEPTH
 pocket_cut = (
     rounded_rect(cq.Workplane("XY").workplane(offset=cnc_pocket_z - 0.1),
-                 GOWLAND_SIZE, GOWLAND_CORNER_R)
+                 CNC_POCKET_SIZE, CNC_POCKET_R)
     .extrude(CNC_BOARD_POCKET_DEPTH + 0.2)
 )
 cnc_body = cnc_body.cut(pocket_cut)
-print("    Board pocket: %.0fmm sq (R%.1f), %.2fmm deep from front face"
-      % (GOWLAND_SIZE, GOWLAND_CORNER_R, CNC_BOARD_POCKET_DEPTH))
+print("    Board pocket: %.2fmm sq (R%.2f), %.2fmm deep from front face"
+      % (CNC_POCKET_SIZE, CNC_POCKET_R, CNC_BOARD_POCKET_DEPTH))
 
 # Through bore — 110mm dia, full depth
 cnc_bore = (
@@ -842,7 +854,7 @@ print(f"  Rear step:      {REAR_SIZE}x{REAR_SIZE}mm (R{REAR_CORNER_R}) inner, "
       f"{cnc_step_depth:.2f}mm deep")
 print(f"  Lip:            {CNC_LIP_THICK:.2f}mm thick, {STEP_WIDTH}mm wide  "
       f"[limit: 2.50mm]")
-print(f"  Board pocket:   {GOWLAND_SIZE}x{GOWLAND_SIZE}mm (R{GOWLAND_CORNER_R}), "
+print(f"  Board pocket:   {CNC_POCKET_SIZE}x{CNC_POCKET_SIZE}mm (R{CNC_POCKET_R}), "
       f"{CNC_BOARD_POCKET_DEPTH:.2f}mm deep from front face")
 print(f"  Through bore:   dia {BORE_DIA}mm")
 print(f"  Clip screws:    4x M3 pan head (roll tap drill {CNC_M3_ROLL_TAP}mm, "

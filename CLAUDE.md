@@ -58,6 +58,9 @@ CNC variant parameters:
 - `CNC_BILLET_THICK` = 6.35mm (0.250" 6061-T6)
 - `CNC_LIP_THICK` = 2.42mm (matches laminate lip)
 - `CNC_BOARD_POCKET_DEPTH` = 1.78mm (board sits flush with front face)
+- `CNC_POCKET_SIZE`/`CNC_POCKET_R` = 139.47mm/R3.95 — smaller than the laminate
+  `GOWLAND_SIZE` (139.75/R4.09) because the CNC body is anodized, not powder
+  coated, so its pocket wall removes less material; both hit ~0.30mm/side fit
 - `CNC_M3_ROLL_TAP` = 2.75mm (SCS roll tap minimum for M3x0.5)
 
 ## Code Conventions
