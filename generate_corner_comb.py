@@ -1,33 +1,38 @@
 #!/usr/bin/env python3
 """
-Fatif Adapter — Corner Radius Test Comb
+Fatif Adapter — Corner Radius Test Comb (SendCutSend-ready)
 
-Generates a single DXF of labeled corner "gauges" for verifying the actual
-corner radii of the Fatif DS 20x25 casting before committing to finished
-re-fabrication. Cut cheaply in bare aluminum / acrylic / MDF (no finish),
-drop each gauge into the matching casting corner, and find the radius that
-seats flush — flats registering against the casting flats with no diagonal
-tip interference and no corner gap.
+Generates a DXF of connected "combs" for verifying the actual corner radii of
+the Fatif DS 20x25 casting before committing to finished re-fabrication.
 
-Why a comb instead of one computed blank:
-  The corner setback along the 45 degree diagonal is s = R*(sqrt(2)-1), so a
-  measured diagonal interference dd maps to a radius change dR = dd/(sqrt(2)-1)
-  = 2.414*dd. That 2.414x amplification means a ~0.2mm caliper slop on dd is
-  ~0.5mm on R, so bracketing beats trusting a single computed value.
+Each comb is a spine bar with a row of teeth; every tooth is one convex rounded
+corner (a candidate radius) with two 90-degree registration flats. Drop a tooth
+corner into the matching casting corner, register the flats against the casting
+flats, and find the radius that seats flush -- no diagonal tip interference and
+no corner gap. Then measure the winning flat length to back-check.
 
-First-fab measurements (calipers, diagonal tip overhang at one corner):
-  Front + middle (BOARD profile, X-Y confirmed OK):  ~1.08mm too tight
-    -> R = 50.75 + 2.414*1.08 = 53.36mm  (clean-metric candidate: 53.0 / 53.5)
-  Rear (REAR profile, also ~0.5mm oversize in X-Y):  ~1.0mm too tight
-    -> R = 45.0  + 2.414*1.00 = 47.41mm  (clean-metric candidate: 47.0 / 47.5)
+Two combs:
+  OUTER (front + middle, 171.5 profile): R52.0..54.0  (calc R53.36)
+  REAR  (160 profile):                   R46.5..48.0  (calc R47.41)
 
-The 1970s/80s Italian casting was almost certainly laid out in clean metric
-values, so the brackets step in 0.5mm increments straddling each computed R.
+The 45-degree corner setback is s = R*(sqrt(2)-1), so a measured diagonal
+interference dd maps to dR = 2.414*dd -- that amplification plus the laser
+tolerance (~0.13mm) is why we bracket in 0.5mm steps rather than trust one blank.
 
-Each gauge is a convex rounded corner (replicating a board corner) with two
-90-degree registration flats FLAT_LEN long. Sharp corner at top-right of each
-gauge; material extends toward lower-left. Cut lines on layer CUT; radius
-labels on layer LABEL (score/ignore — not part of the cut path).
+SendCutSend setup (verified against their current guidelines):
+  * Upload this DXF, NOT a PDF. Instant-price 2D formats are dxf/dwg/eps/ai;
+    PDF is custom-quote only.
+  * Each comb is ONE connected part (teeth on a spine), so the order is 2 parts
+    pre-nested in one file -- far cheaper than 9 loose gauges (per-part minimums)
+    and easier to handle. Both parts must be the same material/thickness.
+  * Radius values are cut clean THROUGH the teeth as 7-segment numerals (SCS
+    does not do solid/raster engraving; single-line etch would need SCS_SLE +
+    a checkout note + eligible material). 7-seg slots have no font islands to
+    drop out and no fragile thin strokes.
+  * All geometry is closed contours on a single layer ("0"). No text entities,
+    no open paths.
+  * Suggested material: bare 5052 aluminum, .040"-.063", no finish -- cheap,
+    dimensionally accurate, metal-in-metal like the real board.
 """
 
 import argparse
@@ -36,84 +41,141 @@ import os
 
 import ezdxf
 
-# --- Radius brackets (mm), 0.5mm increments around the computed targets ---
+# --- Radius brackets (mm), 0.5mm steps around the computed targets ---
 OUTER_RADII = [52.0, 52.5, 53.0, 53.5, 54.0]   # front+middle: calc 53.36
 REAR_RADII = [46.5, 47.0, 47.5, 48.0]          # rear:         calc 47.41
 
-# --- Gauge geometry ---
-FLAT_LEN = 30.0      # registration flat length on each side of the corner
-LABEL_H = 6.0        # text height
+# --- Tooth / comb geometry (mm) ---
+FLAT_LEN = 20.0      # registration flat length beyond each corner tangent
+SPINE_H = 12.0       # spine bar height (connects the teeth into one part)
+TOOTH_GAP = 16.0     # clear gap between teeth (corner access)
+END_MARGIN = 12.0    # spine overhang past the end teeth
+COMB_GAP = 30.0      # vertical gap between the two combs
 
-# --- Sheet layout ---
-COL_PITCH = 105.0    # X spacing between gauge sharp corners
-ROW_PITCH = 120.0    # Y spacing between the two rows
+# --- 7-segment numeral (cut-through) ---
+DIGIT_H = 12.0       # glyph height
+DIGIT_W = 7.0        # glyph width
+SEG_T = 1.3          # segment (slot) thickness
+SEG_GAP = 0.4        # gap so adjacent segments stay disjoint
+GLYPH_ADV = DIGIT_W + 2.6   # digit-to-digit advance
+DOT_ADV = SEG_T + 2.6       # advance for a decimal point
 
-# 90-degree arc bulge, CW (convex toward the sharp corner): -tan(90/4 deg)
-_ARC_BULGE = -math.tan(math.radians(90.0) / 4.0)   # = -0.41421...
+CUT_LAYER = "0"      # SendCutSend: all cut geometry on one layer
+
+# 90-degree arc, CCW (convex toward the corner) for the reversed top traversal.
+_ARC_BULGE = math.tan(math.radians(90.0) / 4.0)   # +0.41421...
+
+# Which of segments a..g are lit per digit.
+_SEG = {
+    "0": "abcdef", "1": "bc",   "2": "abdeg", "3": "abcdg", "4": "bcfg",
+    "5": "acdfg",  "6": "acdefg", "7": "abc", "8": "abcdefg", "9": "abcdfg",
+}
 
 
-def add_corner_gauge(msp, cx, cy, R, label):
-    """One corner gauge with its sharp (theoretical) corner at (cx, cy).
+def _rect(msp, x0, y0, x1, y1):
+    """Cut a closed rectangular slot (as a hole on the cut layer)."""
+    msp.add_lwpolyline(
+        [(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+        close=True, dxfattribs={"layer": CUT_LAYER},
+    )
 
-    Top flat runs along y=cy toward -X; right flat along x=cx toward -Y;
-    the fillet of radius R bulges toward (cx, cy). Inner side closed with a
-    45 degree diagonal to save material.
+
+def _seg_rects(x, y):
+    """Return {seg: (x0,y0,x1,y1)} for a glyph cell with lower-left at (x,y)."""
+    W, H, T, g = DIGIT_W, DIGIT_H, SEG_T, SEG_GAP
+    half = H / 2.0
+    return {
+        "a": (x + T + g, y + H - T, x + W - T - g, y + H),
+        "g": (x + T + g, y + half - T / 2, x + W - T - g, y + half + T / 2),
+        "d": (x + T + g, y, x + W - T - g, y + T),
+        "f": (x, y + half + g, x + T, y + H - T - g),
+        "b": (x + W - T, y + half + g, x + W, y + H - T - g),
+        "e": (x, y + T + g, x + T, y + half - g),
+        "c": (x + W - T, y + T + g, x + W, y + half - g),
+    }
+
+
+def seven_seg_width(s):
+    w = 0.0
+    for ch in s:
+        w += DOT_ADV if ch == "." else GLYPH_ADV
+    return w - (GLYPH_ADV - DIGIT_W)   # trim trailing advance to last glyph width
+
+
+def seven_seg(msp, s, x_center, y_center):
+    """Cut string s (digits and '.') centered on (x_center, y_center)."""
+    total = seven_seg_width(s)
+    x = x_center - total / 2.0
+    y = y_center - DIGIT_H / 2.0
+    for ch in s:
+        if ch == ".":
+            _rect(msp, x, y, x + SEG_T, y + SEG_T)   # decimal point
+            x += DOT_ADV
+            continue
+        segs = _seg_rects(x, y)
+        for name in _SEG[ch]:
+            _rect(msp, *segs[name])
+        x += GLYPH_ADV
+
+
+def add_comb(msp, radii, y_base):
+    """Build one connected comb (spine + up-teeth) with cut-through labels.
+
+    Spine bottom sits at y_base; teeth point up. Each tooth's rounded top-right
+    corner is the candidate radius; the top and right edges are the registration
+    flats. Returns (width, top_y) for layout.
     """
-    top_far = (cx - R - FLAT_LEN, cy)
-    top_tan = (cx - R, cy)
-    right_tan = (cx, cy - R)
-    right_far = (cx, cy - R - FLAT_LEN)
+    max_r = max(radii)
+    tooth_w = max_r + FLAT_LEN          # top flat >= FLAT_LEN for every tooth
+    tooth_h = max_r + FLAT_LEN          # right flat >= FLAT_LEN for every tooth
+    y_spine_top = y_base + SPINE_H
+    y_top = y_spine_top + tooth_h
 
-    # Closed contour: line, arc (bulge), line, closing diagonal.
+    # Lay out teeth left to right.
+    teeth = []
+    x = END_MARGIN
+    for r in radii:
+        teeth.append((x, x + tooth_w, r))
+        x += tooth_w + TOOTH_GAP
+    x_spine0 = 0.0
+    x_spine1 = teeth[-1][1] + END_MARGIN
+
+    # Single closed outline: spine bottom, right edge, top (teeth, R->L), left edge.
     pts = [
-        (top_far[0], top_far[1], 0.0),          # -> top_tan (line)
-        (top_tan[0], top_tan[1], _ARC_BULGE),   # -> right_tan (arc, convex to corner)
-        (right_tan[0], right_tan[1], 0.0),       # -> right_far (line)
-        (right_far[0], right_far[1], 0.0),       # -> top_far (closing diagonal)
+        (x_spine0, y_base, 0.0),
+        (x_spine1, y_base, 0.0),
+        (x_spine1, y_spine_top, 0.0),
     ]
-    msp.add_lwpolyline(pts, format="xyb", close=True, dxfattribs={"layer": "CUT"})
+    for (xL, xR, r) in reversed(teeth):
+        pts.append((xR, y_spine_top, 0.0))          # spine top up to tooth base
+        pts.append((xR, y_top - r, _ARC_BULGE))     # right flat; arc -> top tangent
+        pts.append((xR - r, y_top, 0.0))            # top tangent
+        pts.append((xL, y_top, 0.0))                # top flat
+        pts.append((xL, y_spine_top, 0.0))          # left edge down to spine
+    pts.append((x_spine0, y_spine_top, 0.0))
+    msp.add_lwpolyline(pts, format="xyb", close=True,
+                       dxfattribs={"layer": CUT_LAYER})
 
-    # Label centered inside the pentagon, along the diagonal, rotated 45 deg.
-    lx = cx - 0.40 * (R + FLAT_LEN)
-    ly = cy - 0.40 * (R + FLAT_LEN)
-    txt = msp.add_text(
-        label,
-        dxfattribs={"layer": "LABEL", "height": LABEL_H, "rotation": 45.0},
-    )
-    txt.set_placement((lx, ly), align=ezdxf.enums.TextEntityAlignment.MIDDLE_CENTER)
+    # Cut-through R value centered in each tooth's solid band.
+    for (xL, xR, r) in teeth:
+        seven_seg(msp, "%.1f" % r, (xL + xR) / 2.0, y_spine_top + FLAT_LEN / 2.0)
 
-
-def add_note(msp, x, y, text, height=8.0):
-    msp.add_text(text, dxfattribs={"layer": "LABEL", "height": height}).set_placement(
-        (x, y), align=ezdxf.enums.TextEntityAlignment.LEFT
-    )
+    return x_spine1, y_top
 
 
 def build(output_dir):
     doc = ezdxf.new("R2010")
-    doc.layers.add("CUT", color=7)     # white/black — the cut path
-    doc.layers.add("LABEL", color=3)   # green — text, do not cut
     msp = doc.modelspace()
 
-    # Row 1: outer (front + middle) brackets.
-    add_note(msp, -FLAT_LEN - 54, LABEL_H * 1.5,
-             "OUTER  (front + middle, 171.5 profile)  calc R53.36")
-    for i, R in enumerate(OUTER_RADII):
-        add_corner_gauge(msp, i * COL_PITCH, 0.0, R, "R%.1f" % R)
-
-    # Row 2: rear brackets, below.
-    add_note(msp, -FLAT_LEN - 54, -ROW_PITCH + LABEL_H * 1.5,
-             "REAR  (160 profile)  calc R47.41")
-    for i, R in enumerate(REAR_RADII):
-        add_corner_gauge(msp, i * COL_PITCH, -ROW_PITCH, R, "R%.1f" % R)
-
-    add_note(msp, -FLAT_LEN - 54, ROW_PITCH * 0.65,
-             "FATIF CORNER RADIUS TEST COMB  -  cut cheap, no finish", height=10.0)
+    # REAR comb on the bottom, OUTER comb above it.
+    _, rear_top = add_comb(msp, REAR_RADII, 0.0)
+    add_comb(msp, OUTER_RADII, rear_top + COMB_GAP)
 
     path = os.path.join(output_dir, "fatif_corner_comb.dxf")
     doc.saveas(path)
-    print("  Corner comb: %d outer + %d rear gauges -> %s"
+    print("  Corner comb: OUTER %d + REAR %d teeth, 2 connected parts -> %s"
           % (len(OUTER_RADII), len(REAR_RADII), path))
+    print("  Upload the DXF (not PDF); bare 5052 aluminum .040-.063, no finish.")
 
 
 def main():

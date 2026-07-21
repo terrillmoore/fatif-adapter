@@ -103,6 +103,14 @@ CNC variant parameters:
 - **SendCutSend** (laser cut): aluminum sheets (powder coat/anodize)
   - No countersinking on sheets thinner than .125"
   - No deburring on .025" 2024-T3
+  - File: upload DXF/DWG/EPS/AI for instant pricing; PDF is custom-quote only
+  - Multiple parts allowed pre-nested in one 2D file (same material/thickness)
+  - No solid/raster engraving — only single-line etch (layer `SCS_SLE`) or
+    no-kerf through-cut (layer `SCS_NOKERF`); it's LAYER-NAME based, not color.
+    Both need a checkout note and are material-limited
+  - Cheap/no-finish prototype stock: bare 5052 aluminum (economical alloy)
+  - Corner comb (`make blanks`) is built to these rules: connected combs (one
+    part each), cut-through 7-seg labels, all closed contours on layer `0`
 - **SendCutSend** (CNC machining): single-piece 6061-T6 billet body
   - Upload STEP file (not DXF); auto-detected as CNC part
   - Finishes: media blast, Type II anodize (no powder coat for CNC)
