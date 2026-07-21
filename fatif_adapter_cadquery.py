@@ -73,9 +73,19 @@ REAR_SIZE = BOARD_SIZE - 2 * STEP_WIDTH        # = 160.0
 REAR_CORNER_R = BOARD_CORNER_R - STEP_WIDTH    # = 45.0
 
 # --- Front cutout (Gowland board drops through this) ---
-# Gowland boards measure 137.76 x 137.70mm; cutout gives ~0.6mm clearance/side
-GOWLAND_SIZE = 139.0        # cutout size
-GOWLAND_CORNER_R = 3.4      # Gowland board corner radius
+# Gowland 8x10 board is 138.5mm sq, R3.46 corners (measured from the vector
+# art in ../lensboards/138mm: outer 392.599pt = 138.5mm, corner tangent at
+# 9.814pt = 3.462mm). Both the board AND this front sheet are powder coated
+# at ~0.163mm/surface (per the lensboard design's empirical 0.326mm/dia hole
+# enlargement), so coating eats 4*0.163 = 0.652mm of diametral clearance --
+# the old 139.0 cutout had only 0.50mm bare clearance and rubbed after coat.
+# Size for a ~0.30mm/side finished slip fit:
+#   GOWLAND_SIZE     = 138.5 + 4*coat + 2*clearance = 138.5 + 0.652 + 0.60
+#   GOWLAND_CORNER_R = board_R + (2*coat + clearance) = 3.462 + 0.626
+# (CNC variant reuses these; its pocket is anodized not coated, so it ends
+#  up ~0.14mm/side looser -- still a fine slip fit.)
+GOWLAND_SIZE = 139.75       # cutout size (was 139.0 -- rubbed after coating)
+GOWLAND_CORNER_R = 4.09     # cutout corner R = board R3.46 + 0.626 clearance
 
 # --- Central through bore (rear + middle sheets) ---
 BORE_DIA = 110.0            # clears Ilex #5 flange with margin
