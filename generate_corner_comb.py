@@ -48,7 +48,7 @@ REAR_RADII = [46.5, 47.0, 47.5, 48.0]          # rear:         calc 47.41
 # --- Tooth / comb geometry (mm) ---
 FLAT_LEN = 20.0      # registration flat length beyond each corner tangent
 SPINE_H = 12.0       # spine bar height (connects the teeth into one part)
-TOOTH_GAP = 16.0     # clear gap between teeth (corner access)
+TOOTH_GAP = 32.0     # clear gap between teeth (corner access)
 END_MARGIN = 12.0    # spine overhang past the end teeth
 COMB_GAP = 30.0      # vertical gap between the two combs
 
