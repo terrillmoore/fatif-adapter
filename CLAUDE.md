@@ -9,8 +9,11 @@ Outputs STEP/DXF files for fabrication, plus nameplate mockup and paint artwork.
 
 ## Build
 
+Environment is uv-managed (`pyproject.toml` + `uv.lock`). Make targets run
+scripts via `uv run`; there is no venv to activate.
+
 ```sh
-make init      # create .venv/, install CadQuery
+make init      # uv sync (create .venv/ from uv.lock)
 make all       # generate everything into output/
 make clean     # rm -rf output/
 ```
@@ -19,6 +22,12 @@ Output directory is configurable: `make all OUTPUT_DIR=custom_dir`.
 
 Individual targets: `build` (STEP+DXF), `mockup` (PNG), `artwork` (SVGs),
 `blanks` (corner-radius test comb DXF), `pdf` (DXF-to-PDF conversion).
+
+Run scripts without make via `uv run python <script>.py --output-dir output`.
+On Windows, `make` needs Git Bash + GNU make (`scoop install make`); or just
+use `uv run` directly. `nlopt` is pinned to 2.9.1 in `pyproject.toml` (newest
+release with macOS x86_64 wheels alongside arm64/win/linux — keeps the lock
+cross-platform).
 
 ## File Layout
 
@@ -54,7 +63,7 @@ CNC variant parameters:
 ## Code Conventions
 
 - Python 3.9+, no type annotations in existing code
-- CadQuery 2.6.1 in `.venv/`
+- CadQuery 2.6.1, uv-managed (`.venv/` synced from `uv.lock`)
 - All scripts use `argparse` with `--output-dir` (default `.`)
 - Generated files go to `output/` (gitignored), never the repo root
 - Units are millimeters throughout

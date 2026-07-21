@@ -159,24 +159,42 @@ References:
 ## Quick Start
 
 ```sh
-make init      # create venv, install CadQuery
+make init      # sync the uv-managed environment (.venv from uv.lock)
 make all       # generate everything (STEP, DXF, PNG, SVG)
+```
+
+The environment is managed by [uv](https://docs.astral.sh/uv/) — `make init`
+runs `uv sync`, and every target runs its script via `uv run`, so there is no
+venv to create or activate by hand. `uv` fetches a compatible Python itself if
+one isn't present. You can also skip `make` and run a script directly:
+
+```sh
+uv run python fatif_adapter_cadquery.py --output-dir output
 ```
 
 All generated files go to the `output/` directory (configurable via
 `make all OUTPUT_DIR=custom_dir`).
 
 Individual targets: `make build` (STEP + DXF), `make mockup` (PNG),
-`make artwork` (paint SVGs).
+`make artwork` (paint SVGs), `make blanks` (corner-radius test comb DXF),
+`make pdf` (DXF → PDF).
 
 Run `make help` to see all targets.
 
 ### Prerequisites
 
-- Python 3.9+
-- `make`
+- [uv](https://docs.astral.sh/uv/) (`brew install uv`, or the standalone
+  installer at https://astral.sh/uv). Everything else — the Python
+  interpreter and all Python dependencies — is provisioned by `uv` from
+  `uv.lock`.
+- `make` (to use the convenience targets; optional if you invoke `uv run`
+  directly).
 
-Everything else is installed automatically by `make init`.
+**Windows:** the Makefile relies on a POSIX shell (`mkdir -p`, `rm -rf`, glob
+expansion), so run it under Git Bash with GNU make — install
+[Git for Windows](https://git-scm.com/download/win) and, via
+[Scoop](https://scoop.sh/), `scoop install make`. Then `make all` works as on
+macOS/Linux. Or skip make entirely and call the `uv run python …` commands.
 
 ### Generated Files
 
