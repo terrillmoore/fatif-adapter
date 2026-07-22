@@ -189,6 +189,11 @@ def add_square(msp, radii, x0, y0):
 
 def build(output_dir):
     doc = ezdxf.new("R2010")
+    # Declare millimeters so vendors don't misread the units. Without an
+    # explicit mm flag ($INSUNITS=4), Ponoko assumes the coordinates are
+    # inches and scales the part by 25.4 (157.5mm -> 4000mm).
+    doc.units = ezdxf.units.MM          # sets $INSUNITS = 4
+    doc.header["$MEASUREMENT"] = 1       # metric
     msp = doc.modelspace()
 
     # REAR square on the bottom, OUTER square above it (left-aligned).
