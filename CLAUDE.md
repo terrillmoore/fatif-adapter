@@ -109,11 +109,15 @@ CNC variant parameters:
     no-kerf through-cut (layer `SCS_NOKERF`); it's LAYER-NAME based, not color.
     Both need a checkout note and are material-limited
   - Cheap/no-finish prototype stock: bare 5052 aluminum (economical alloy)
-  - Corner squares (`make blanks`) are built to these rules: two square frames
-    written as SEPARATE DXFs (one part each — Ponoko treats each file as one
-    part), 4 different corner radii per square, cut-through 7-seg labels on
-    each corner band, all closed contours on layer `0`, units stamped mm
-    (`$INSUNITS=4`) so vendors don't read the file as inches (Ponoko did)
+  - Corner squares (`make blanks`) → `fatif_corner_squares.dxf` (cut) +
+    `_key.pdf` (print, don't cut). Two SOLID squares (front 157.5mm, rear
+    145.5mm), each corner a different candidate radius, nested in one DXF
+    (SCS allows pre-nested parts). Kept solid + label-free on purpose: laser
+    cost tracks pierce count, and per-corner 7-seg numerals were ~65 pierces
+    each. Instead one small orientation hole marks the smallest-R (BL) corner,
+    bottom-biased so it's flip-proof; the key PDF maps corners → radii. All
+    closed contours on layer `0`, mm-stamped (`$INSUNITS=4`; Ponoko misreads
+    unstamped files as inches). Was earlier a comb, then labeled frames.
 - **SendCutSend** (CNC machining): single-piece 6061-T6 billet body
   - Upload STEP file (not DXF); auto-detected as CNC part
   - Finishes: media blast, Type II anodize (no powder coat for CNC)

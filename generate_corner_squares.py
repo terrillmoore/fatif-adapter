@@ -2,14 +2,14 @@
 """
 Fatif Adapter — Corner Radius Test Squares (SendCutSend-ready)
 
-Generates a DXF of two square frames for verifying the actual corner radii of
-the Fatif DS 20x25 casting before committing to finished re-fabrication.
+Generates a DXF of two SOLID square gauges for verifying the actual corner
+radii of the Fatif DS 20x25 casting before committing to finished re-fab,
+plus a printed reference key (PDF) that maps each corner to its radius.
 
-Each square is a frame (band) whose FOUR corners each carry a DIFFERENT
-candidate radius. Push one corner of the square into the matching casting
-corner, register the two adjacent flats against the casting flats, and judge
-the fit (flush = right radius; diagonal tip gap or interference = wrong).
-Rotate/reposition to test each of the four corners in turn.
+Each square's FOUR corners each carry a DIFFERENT candidate radius. Push one
+corner of the square into the matching casting corner, register the two
+adjacent flats against the casting flats, and judge the fit (flush = right
+radius; diagonal tip gap or interference = wrong). Rotate to test each corner.
 
 Two squares:
   FRONT (front + middle sheets, 171.5 profile): corners R52.5/53.0/53.5/54.0
@@ -21,17 +21,20 @@ The 45-degree corner setback is s = R*(sqrt(2)-1), so a measured diagonal
 interference dd maps to dR = 2.414*dd -- that amplification plus laser
 tolerance (~0.13mm) is why we bracket in 0.5mm steps around each target.
 
+Cost-driven design (throwaway gauges): SOLID squares, no inner hole and no
+cut-through numerals -- laser cost is dominated by pierce count and cut
+length, and per-corner numerals were ~65 tiny pierces per part. Instead each
+square gets ONE small orientation hole at its smallest-radius corner (BL);
+the printed key (fatif_corner_squares_key.pdf) says radii step up 0.5mm going
+counterclockwise from that hole. So the DXF is just 2 outlines + 2 holes.
+
 SendCutSend setup (per their current guidelines):
-  * Upload each DXF, NOT a PDF. Instant-price 2D formats are dxf/dwg/eps/ai.
-  * Written as TWO separate files (one square each) -- Ponoko treats each
-    uploaded DXF as a single part. Each square is a closed band (outer +
-    inner contour). Units are stamped as mm ($INSUNITS=4) so no vendor
-    misreads the file as inches.
-  * Radius values are cut clean THROUGH the band as 7-segment numerals, on the
-    corner arc adjacent to each corner (SCS does no solid/raster engraving;
-    single-line etch would need SCS_SLE + a checkout note + eligible material).
+  * Upload the DXF, NOT the PDF. Instant-price 2D formats are dxf/dwg/eps/ai.
+  * Both squares nested in ONE file (SCS allows pre-nested parts, same
+    material/thickness). Units stamped as mm ($INSUNITS=4).
   * All geometry is closed contours on a single layer ("0"). No text entities.
   * Suggested material: bare 5052 aluminum, .040"-.063", no finish.
+  * The PDF is a human reference only -- do not upload it for cutting.
 """
 
 import argparse
@@ -44,86 +47,25 @@ import ezdxf
 FRONT_RADII = [52.5, 53.0, 53.5, 54.0]   # front + middle sheets: calc 53.36
 REAR_RADII = [46.5, 47.0, 47.5, 48.0]    # rear sheet:            calc 47.41
 
-# --- Frame geometry (mm) ---
-FRAME_W = 24.0       # band width (outer edge to inner edge); holds corner label
-FLAT_MIN = 50.0      # shortest straight flat (registration length)
+# --- Geometry (mm) ---
+FLAT_MIN = 50.0        # shortest straight flat (registration length)
+ORIENT_HOLE_DIA = 2.5  # orientation hole marking the BL (smallest-R) corner
+ORIENT_HOLE_INSET = 13.0  # hole distance in from the BL corner arc
+# Hole direction from the BL arc center: biased toward the BOTTOM edge (not the
+# 45deg diagonal) so orientation is flip-proof -- the part is otherwise
+# mirror-symmetric, and a bottom-biased hole reads "nearer left edge" only when
+# the part is flipped over. 250deg = down and slightly left.
+ORIENT_HOLE_ANGLE = 250.0
+NEST_GAP = 20.0        # gap between the two squares in the combined DXF
 
-# --- 7-segment numeral (cut-through) ---
-# Kept small and horizontal so each label sits inside the thick corner band
-# (rotated 7-seg digits are hard to read; the band is ~FRAME_W wide, so a
-# compact horizontal numeral fits at the corner's diagonal midpoint).
-DIGIT_H = 7.0        # glyph height
-DIGIT_W = 5.0        # glyph width
-SEG_T = 1.0          # segment (slot) thickness
-SEG_GAP = 0.35       # gap so adjacent segments stay disjoint
-GLYPH_ADV = DIGIT_W + 2.0   # digit-to-digit advance
-DOT_ADV = SEG_T + 2.0       # advance for a decimal point
-
-CUT_LAYER = "0"      # SendCutSend: all cut geometry on one layer
+CUT_LAYER = "0"        # SendCutSend: all cut geometry on one layer
 
 # 90-degree convex corner arc, CCW traversal: bulge = +tan(90/4 deg).
 _BULGE = math.tan(math.radians(90.0) / 4.0)   # +0.41421...
 _SQRT2 = math.sqrt(2.0)
 
-# Which of segments a..g are lit per digit.
-_SEG = {
-    "0": "abcdef", "1": "bc",   "2": "abdeg", "3": "abcdg", "4": "bcfg",
-    "5": "acdfg",  "6": "acdefg", "7": "abc", "8": "abcdefg", "9": "abcdfg",
-}
 
-
-# ---------------------------------------------------------------- 7-seg labels
-
-def _seg_rects_local(gx, gy):
-    """{seg: (x0,y0,x1,y1)} for a glyph with lower-left at local (gx,gy)."""
-    W, H, T, g = DIGIT_W, DIGIT_H, SEG_T, SEG_GAP
-    half = H / 2.0
-    return {
-        "a": (gx + T + g, gy + H - T, gx + W - T - g, gy + H),
-        "g": (gx + T + g, gy + half - T / 2, gx + W - T - g, gy + half + T / 2),
-        "d": (gx + T + g, gy, gx + W - T - g, gy + T),
-        "f": (gx, gy + half + g, gx + T, gy + H - T - g),
-        "b": (gx + W - T, gy + half + g, gx + W, gy + H - T - g),
-        "e": (gx, gy + T + g, gx + T, gy + half - g),
-        "c": (gx + W - T, gy + T + g, gx + W, gy + half - g),
-    }
-
-
-def _label_width(s):
-    w = 0.0
-    for ch in s:
-        w += DOT_ADV if ch == "." else GLYPH_ADV
-    return w - (GLYPH_ADV - DIGIT_W)   # trim trailing advance to last glyph width
-
-
-def _emit_rect(msp, x0, y0, x1, y1, cx, cy, cos_t, sin_t):
-    """Rotate a local rect about the origin by theta, translate to (cx,cy)."""
-    pts = []
-    for (x, y) in [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]:
-        pts.append((cx + x * cos_t - y * sin_t, cy + x * sin_t + y * cos_t))
-    msp.add_lwpolyline(pts, close=True, dxfattribs={"layer": CUT_LAYER})
-
-
-def add_label(msp, s, cx, cy, theta_deg):
-    """Cut string s (digits and '.') centered on (cx,cy), rotated theta_deg."""
-    cos_t = math.cos(math.radians(theta_deg))
-    sin_t = math.sin(math.radians(theta_deg))
-    penx = -_label_width(s) / 2.0
-    gy = -DIGIT_H / 2.0
-    for ch in s:
-        if ch == ".":
-            _emit_rect(msp, penx, gy, penx + SEG_T, gy + SEG_T, cx, cy, cos_t, sin_t)
-            penx += DOT_ADV
-            continue
-        rects = _seg_rects_local(penx, gy)
-        for name in _SEG[ch]:
-            _emit_rect(msp, *rects[name], cx, cy, cos_t, sin_t)
-        penx += GLYPH_ADV
-
-
-# ---------------------------------------------------------------- square frame
-
-def _square_size(radii):
+def square_size(radii):
     """Bounding-box size B so every straight flat is >= FLAT_MIN.
 
     Flat on the edge between adjacent corners i,j is B - R_i - R_j; the tightest
@@ -133,87 +75,163 @@ def _square_size(radii):
     return max(radii[i] + radii[j] for (i, j) in pairs) + FLAT_MIN
 
 
-def _ring(radii, x0, y0, inset):
-    """One closed rounded-square contour (CCW) for the given corner radii.
-
-    inset > 0 builds the inner contour (band hole): edges pull in by `inset`
-    and corner radii shrink by `inset`, keeping a constant band width.
-    Corners are [BL, BR, TR, TL]; box spans (x0,y0)..(x0+B, y0+B) at inset 0.
-    """
-    B = _square_size(radii)
-    rBL, rBR, rTR, rTL = (r - inset for r in radii)
-    # Corner arc centers are fixed (independent of inset) at radius R in.
-    cBL = (x0 + radii[0], y0 + radii[0])
-    cBR = (x0 + B - radii[1], y0 + radii[1])
-    cTR = (x0 + B - radii[2], y0 + B - radii[2])
-    cTL = (x0 + radii[3], y0 + B - radii[3])
-    lo, hi = x0 + inset, x0 + B - inset
-    ylo, yhi = y0 + inset, y0 + B - inset
-    pts = [
-        (cBL[0], ylo, 0.0),                 # bottom flat, left tangent
-        (cBR[0], ylo, _BULGE),              # -> BR bottom tangent, arc up
-        (hi, cBR[1], 0.0),                  # right flat
-        (hi, cTR[1], _BULGE),               # -> TR right tangent, arc left
-        (cTR[0], yhi, 0.0),                 # top flat
-        (cTL[0], yhi, _BULGE),              # -> TL top tangent, arc down
-        (lo, cTL[1], 0.0),                  # left flat
-        (lo, cBL[1], _BULGE),               # -> BL left tangent, arc to start
+def corner_centers(radii, x0, y0):
+    """Arc centers for [BL, BR, TR, TL] of the square at origin (x0, y0)."""
+    B = square_size(radii)
+    return B, [
+        (x0 + radii[0], y0 + radii[0]),          # BL
+        (x0 + B - radii[1], y0 + radii[1]),      # BR
+        (x0 + B - radii[2], y0 + B - radii[2]),  # TR
+        (x0 + radii[3], y0 + B - radii[3]),      # TL
     ]
-    return B, pts, (cBL, cBR, cTR, cTL)
+
+
+def _outline(radii, x0, y0):
+    """Closed rounded-square outline (CCW) as (x, y, bulge) vertices."""
+    B, (cBL, cBR, cTR, cTL) = corner_centers(radii, x0, y0)
+    return [
+        (cBL[0], y0, 0.0),          # bottom flat, from BL bottom tangent
+        (cBR[0], y0, _BULGE),       # -> BR bottom tangent, arc up
+        (x0 + B, cBR[1], 0.0),      # right flat
+        (x0 + B, cTR[1], _BULGE),   # -> TR right tangent, arc left
+        (cTR[0], y0 + B, 0.0),      # top flat
+        (cTL[0], y0 + B, _BULGE),   # -> TL top tangent, arc down
+        (x0, cTL[1], 0.0),          # left flat
+        (x0, cBL[1], _BULGE),       # -> BL left tangent, arc to start
+    ]
+
+
+def orient_hole_center(radii, x0, y0):
+    """Small hole marking the BL (smallest-radius) corner, bottom-biased."""
+    _, centers = corner_centers(radii, x0, y0)
+    cx, cy = centers[0]                      # BL
+    r = radii[0] - ORIENT_HOLE_INSET
+    a = math.radians(ORIENT_HOLE_ANGLE)
+    return (cx + r * math.cos(a), cy + r * math.sin(a))
 
 
 def add_square(msp, radii, x0, y0):
-    """Build one square frame with cut-through corner labels. Returns (B, top)."""
-    B, outer, centers = _ring(radii, x0, y0, 0.0)
-    msp.add_lwpolyline(outer, format="xyb", close=True,
+    """Draw one solid square outline + its orientation hole. Returns B."""
+    msp.add_lwpolyline(_outline(radii, x0, y0), format="xyb", close=True,
                        dxfattribs={"layer": CUT_LAYER})
-    # Inner contour (band hole). Kept same CCW winding as the outer: reversing
-    # a bulge polyline flips its arcs concave. SCS detects the hole by
-    # containment, not winding, so nesting two CCW closed contours is fine.
-    _, inner, _ = _ring(radii, x0, y0, FRAME_W)
-    msp.add_lwpolyline(inner, format="xyb", close=True,
-                       dxfattribs={"layer": CUT_LAYER})
-
-    # Label each corner with a small HORIZONTAL numeral centered on the middle
-    # of that corner's band, along the outward diagonal. The band is thick
-    # enough (FRAME_W) that a compact horizontal label clears both contours.
-    diag = [(-1, -1), (1, -1), (1, 1), (-1, 1)]     # BL, BR, TR, TL
-    for i, (cx, cy) in enumerate(centers):
-        dx, dy = diag[i]
-        rmid = radii[i] - FRAME_W / 2.0             # middle of the band
-        lx = cx + dx / _SQRT2 * rmid
-        ly = cy + dy / _SQRT2 * rmid
-        add_label(msp, "%.1f" % radii[i], lx, ly, 0.0)
-
-    return B, y0 + B
+    hx, hy = orient_hole_center(radii, x0, y0)
+    msp.add_circle((hx, hy), ORIENT_HOLE_DIA / 2.0, dxfattribs={"layer": CUT_LAYER})
+    return square_size(radii)
 
 
-def _write_square(radii, output_dir, name):
-    """Write one square gauge to its own DXF (one Ponoko/SCS part per file)."""
+def _layout():
+    """Nested placement of both squares: FRONT left, REAR right, bottom-aligned."""
+    bf = square_size(FRONT_RADII)
+    return [
+        (FRONT_RADII, 0.0, 0.0, "FRONT"),
+        (REAR_RADII, bf + NEST_GAP, 0.0, "REAR"),
+    ]
+
+
+def write_dxf(output_dir):
     doc = ezdxf.new("R2010")
     # Declare millimeters so vendors don't misread the units. Without an
-    # explicit mm flag ($INSUNITS=4), Ponoko assumes the coordinates are
-    # inches and scales the part by 25.4 (157.5mm -> 4000mm).
+    # explicit mm flag ($INSUNITS=4), some importers (Ponoko) assume inches
+    # and scale the part by 25.4 (157.5mm -> 4000mm).
     doc.units = ezdxf.units.MM          # sets $INSUNITS = 4
     doc.header["$MEASUREMENT"] = 1       # metric
-    B, _ = add_square(doc.modelspace(), radii, 0.0, 0.0)
-    path = os.path.join(output_dir, name)
+    msp = doc.modelspace()
+    for radii, x0, y0, name in _layout():
+        B = add_square(msp, radii, x0, y0)
+        print("  %-5s square: %.1fx%.1fmm, corners %s"
+              % (name, B, B, "/".join("%.1f" % r for r in radii)))
+    path = os.path.join(output_dir, "fatif_corner_squares.dxf")
     doc.saveas(path)
-    print("  %-5s square: %.1fx%.1fmm, corners %s -> %s"
-          % (name.split("_")[-1].split(".")[0].upper(), B, B,
-             "/".join("%.1f" % r for r in radii), path))
+    print("  DXF (both nested, solid, mm) -> %s" % path)
     return path
 
 
+def write_key(output_dir):
+    """Printed reference: outlines + per-corner radius labels + orient hole."""
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Circle
+
+    fig, ax = plt.subplots(figsize=(11, 6))
+    diag = [(-1, -1), (1, -1), (1, 1), (-1, 1)]     # BL, BR, TR, TL outward
+    for radii, x0, y0, name in _layout():
+        B, centers = corner_centers(radii, x0, y0)
+        # Outline: sample each arc so the rounded square renders true.
+        xs, ys = _outline_points(radii, x0, y0)
+        ax.plot(xs, ys, "k-", lw=1.2)
+        # Corner radius labels, placed just outside each corner.
+        for i, (cx, cy) in enumerate(centers):
+            dx, dy = diag[i]
+            lx = cx + dx / _SQRT2 * (radii[i] + 12)
+            ly = cy + dy / _SQRT2 * (radii[i] + 12)
+            ax.text(lx, ly, "R%.1f" % radii[i], ha="center", va="center",
+                    fontsize=12, fontweight="bold")
+        # Orientation hole + callout.
+        hx, hy = orient_hole_center(radii, x0, y0)
+        ax.add_patch(Circle((hx, hy), ORIENT_HOLE_DIA / 2.0, fc="k"))
+        ax.annotate("orient. hole = smallest R,\nnearer BOTTOM edge\n"
+                    "(nearer LEFT edge = flipped)", (hx, hy),
+                    xytext=(x0 + B * 0.5, y0 + B * 0.30), fontsize=7.5,
+                    ha="center", color="0.35",
+                    arrowprops=dict(arrowstyle="->", color="0.5", lw=0.8))
+        ax.text(x0 + B / 2, y0 + B / 2, "%s\n%.1fmm sq" % (name, B),
+                ha="center", va="center", fontsize=13, color="0.25")
+
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.set_title("Fatif corner-radius gauges — reference key  "
+                 "(radii step +0.5mm CCW from the orientation hole)",
+                 fontsize=11)
+    fig.text(0.5, 0.03,
+             "Push each corner into the matching casting corner; the flush one "
+             "(no tip gap, no interference) is the true radius.  "
+             "Bare 5052 aluminum, .040-.063in, no finish.",
+             ha="center", fontsize=8, color="0.4")
+    path = os.path.join(output_dir, "fatif_corner_squares_key.pdf")
+    fig.savefig(path, bbox_inches="tight")
+    plt.close(fig)
+    print("  Reference key (PRINT this, do not cut) -> %s" % path)
+    return path
+
+
+def _outline_points(radii, x0, y0, per_arc=24):
+    """Expand the bulge outline into a dense point list for plotting."""
+    verts = _outline(radii, x0, y0)
+    xs, ys = [], []
+    n = len(verts)
+    for i in range(n):
+        x0v, y0v, b = verts[i]
+        x1v, y1v, _ = verts[(i + 1) % n]
+        xs.append(x0v)
+        ys.append(y0v)
+        if b:  # arc from this vertex to the next
+            chord = math.hypot(x1v - x0v, y1v - y0v)
+            ang = 4 * math.atan(b)
+            r = chord / (2 * math.sin(ang / 2))
+            mx, my = (x0v + x1v) / 2, (y0v + y1v) / 2
+            # center offset perpendicular to the chord
+            d = math.sqrt(max(r * r - (chord / 2) ** 2, 0))
+            ux, uy = (x1v - x0v) / chord, (y1v - y0v) / chord
+            cx, cy = mx - uy * d, my + ux * d
+            a0 = math.atan2(y0v - cy, x0v - cx)
+            for k in range(1, per_arc):
+                a = a0 + ang * k / per_arc
+                xs.append(cx + r * math.cos(a))
+                ys.append(cy + r * math.sin(a))
+    xs.append(verts[0][0])
+    ys.append(verts[0][1])
+    return xs, ys
+
+
 def build(output_dir):
-    # Two separate files -- Ponoko treats each uploaded DXF as one part.
-    _write_square(FRONT_RADII, output_dir, "fatif_corner_squares_front.dxf")
-    _write_square(REAR_RADII, output_dir, "fatif_corner_squares_rear.dxf")
-    print("  Upload each DXF (not PDF); bare 5052 aluminum .040-.063, no finish.")
+    write_dxf(output_dir)
+    write_key(output_dir)
+    print("  Upload the DXF (not PDF); bare 5052 aluminum .040-.063, no finish.")
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Generate Fatif corner-radius test squares DXF")
+    ap = argparse.ArgumentParser(description="Generate Fatif corner-radius test squares DXF + key")
     ap.add_argument("--output-dir", default=".", help="Output directory (default: .)")
     args = ap.parse_args()
     os.makedirs(args.output_dir, exist_ok=True)
