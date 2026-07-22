@@ -21,7 +21,7 @@ make clean     # rm -rf output/
 Output directory is configurable: `make all OUTPUT_DIR=custom_dir`.
 
 Individual targets: `build` (STEP+DXF), `mockup` (PNG), `artwork` (SVGs),
-`blanks` (corner-radius test comb DXF), `pdf` (DXF-to-PDF conversion).
+`blanks` (corner-radius test squares DXF), `pdf` (DXF-to-PDF conversion).
 
 Run scripts without make via `uv run python <script>.py --output-dir output`.
 On Windows, `make` needs Git Bash + GNU make (`scoop install make`); or just
@@ -36,7 +36,7 @@ cross-platform).
 | `fatif_adapter_cadquery.py` | Main CadQuery script: laminate + CNC body models, DXF flat patterns, assembly STEPs |
 | `generate_nameplate_mockup.py` | Three-panel matplotlib mockup of clip nameplates |
 | `generate_paint_artwork.py` | Paint artwork SVGs (even-odd compound paths for knockout text) |
-| `generate_corner_comb.py` | Corner-radius test comb DXF (verify casting corners pre-refab) |
+| `generate_corner_squares.py` | Corner-radius test squares DXF (verify casting corners pre-refab) |
 | `dxf2pdf.py` | DXF-to-PDF converter using ezdxf + matplotlib |
 | `Makefile` | Build system; all scripts accept `--output-dir` |
 | `README.md` | Design docs, hardware BOM, fabrication notes |
@@ -109,8 +109,9 @@ CNC variant parameters:
     no-kerf through-cut (layer `SCS_NOKERF`); it's LAYER-NAME based, not color.
     Both need a checkout note and are material-limited
   - Cheap/no-finish prototype stock: bare 5052 aluminum (economical alloy)
-  - Corner comb (`make blanks`) is built to these rules: connected combs (one
-    part each), cut-through 7-seg labels, all closed contours on layer `0`
+  - Corner squares (`make blanks`) are built to these rules: two square frames
+    (one part each), 4 different corner radii per square, cut-through 7-seg
+    labels on each corner band, all closed contours on layer `0`
 - **SendCutSend** (CNC machining): single-piece 6061-T6 billet body
   - Upload STEP file (not DXF); auto-detected as CNC part
   - Finishes: media blast, Type II anodize (no powder coat for CNC)

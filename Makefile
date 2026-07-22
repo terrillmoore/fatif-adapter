@@ -28,9 +28,9 @@ artwork: ## Generate paint artwork SVGs
 	@mkdir -p $(OUTPUT_DIR)
 	$(UV) run python generate_paint_artwork.py --output-dir $(OUTPUT_DIR)
 
-blanks: ## Generate corner-radius test comb DXF
+blanks: ## Generate corner-radius test squares DXF
 	@mkdir -p $(OUTPUT_DIR)
-	$(UV) run python generate_corner_comb.py --output-dir $(OUTPUT_DIR)
+	$(UV) run python generate_corner_squares.py --output-dir $(OUTPUT_DIR)
 
 pdf: build ## Convert DXF files to PDF for viewing
 	$(UV) run python dxf2pdf.py --output-dir $(OUTPUT_DIR) $(OUTPUT_DIR)/*.dxf
