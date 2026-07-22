@@ -109,10 +109,12 @@ CNC variant parameters:
     no-kerf through-cut (layer `SCS_NOKERF`); it's LAYER-NAME based, not color.
     Both need a checkout note and are material-limited
   - Cheap/no-finish prototype stock: bare 5052 aluminum (economical alloy)
-  - Corner squares (`make blanks`) → `fatif_corner_squares.dxf` (cut) +
-    `_key.pdf` (print, don't cut). Two SOLID squares (front 157.5mm, rear
-    145.5mm), each corner a different candidate radius, nested in one DXF
-    (SCS allows pre-nested parts). Kept solid + label-free on purpose: laser
+  - Corner squares (`make blanks`) → `fatif_corner_squares_front.dxf` +
+    `_rear.dxf` (cut, one part each) + `_key.pdf` (print, don't cut). Two SOLID
+    squares (front 157.5mm, rear 145.5mm), each corner a different candidate
+    radius. SEPARATE files (not nested) — SCS prices per part and its quote UI
+    keys size/options off the file bbox, so a nested file misreads size and
+    hides options. Kept solid + label-free on purpose: laser
     cost tracks pierce count, and per-corner 7-seg numerals were ~65 pierces
     each. Instead one small orientation hole marks the smallest-R (BL) corner,
     bottom-biased so it's flip-proof; the key PDF maps corners → radii. All

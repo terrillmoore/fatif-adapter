@@ -29,12 +29,14 @@ the printed key (fatif_corner_squares_key.pdf) says radii step up 0.5mm going
 counterclockwise from that hole. So the DXF is just 2 outlines + 2 holes.
 
 SendCutSend setup (per their current guidelines):
-  * Upload the DXF, NOT the PDF. Instant-price 2D formats are dxf/dwg/eps/ai.
-  * Both squares nested in ONE file (SCS allows pre-nested parts, same
-    material/thickness). Units stamped as mm ($INSUNITS=4).
+  * Upload each DXF, NOT the PDF. Instant-price 2D formats are dxf/dwg/eps/ai.
+  * TWO separate files, one square each (fatif_corner_squares_front.dxf and
+    _rear.dxf). SCS prices per part and its quote UI keys size/options off the
+    whole file's bbox, so a nested file misreads size and hides options.
+  * Units stamped as mm ($INSUNITS=4).
   * All geometry is closed contours on a single layer ("0"). No text entities.
   * Suggested material: bare 5052 aluminum, .040"-.063", no finish.
-  * The PDF is a human reference only -- do not upload it for cutting.
+  * The key PDF is a human reference only -- do not upload it for cutting.
 """
 
 import argparse
@@ -119,8 +121,8 @@ def add_square(msp, radii, x0, y0):
     return square_size(radii)
 
 
-def _layout():
-    """Nested placement of both squares: FRONT left, REAR right, bottom-aligned."""
+def _key_layout():
+    """Side-by-side placement used only for the printed key (not the cut files)."""
     bf = square_size(FRONT_RADII)
     return [
         (FRONT_RADII, 0.0, 0.0, "FRONT"),
@@ -128,22 +130,28 @@ def _layout():
     ]
 
 
-def write_dxf(output_dir):
+def _write_one(radii, name, output_dir):
+    """Write one solid square gauge to its own DXF at origin (one SCS part)."""
     doc = ezdxf.new("R2010")
     # Declare millimeters so vendors don't misread the units. Without an
     # explicit mm flag ($INSUNITS=4), some importers (Ponoko) assume inches
     # and scale the part by 25.4 (157.5mm -> 4000mm).
     doc.units = ezdxf.units.MM          # sets $INSUNITS = 4
     doc.header["$MEASUREMENT"] = 1       # metric
-    msp = doc.modelspace()
-    for radii, x0, y0, name in _layout():
-        B = add_square(msp, radii, x0, y0)
-        print("  %-5s square: %.1fx%.1fmm, corners %s"
-              % (name, B, B, "/".join("%.1f" % r for r in radii)))
-    path = os.path.join(output_dir, "fatif_corner_squares.dxf")
+    B = add_square(doc.modelspace(), radii, 0.0, 0.0)
+    path = os.path.join(output_dir, "fatif_corner_squares_%s.dxf" % name.lower())
     doc.saveas(path)
-    print("  DXF (both nested, solid, mm) -> %s" % path)
+    print("  %-5s square: %.1fx%.1fmm, corners %s -> %s"
+          % (name, B, B, "/".join("%.1f" % r for r in radii), path))
     return path
+
+
+def write_dxf(output_dir):
+    # Separate files, one part each: SCS prices per part and its quote UI keys
+    # size/options off the whole file's bbox, so a nested file misreads size
+    # and can hide thickness/finish options.
+    _write_one(FRONT_RADII, "FRONT", output_dir)
+    _write_one(REAR_RADII, "REAR", output_dir)
 
 
 def write_key(output_dir):
@@ -155,7 +163,7 @@ def write_key(output_dir):
 
     fig, ax = plt.subplots(figsize=(11, 6))
     diag = [(-1, -1), (1, -1), (1, 1), (-1, 1)]     # BL, BR, TR, TL outward
-    for radii, x0, y0, name in _layout():
+    for radii, x0, y0, name in _key_layout():
         B, centers = corner_centers(radii, x0, y0)
         # Outline: sample each arc so the rounded square renders true.
         xs, ys = _outline_points(radii, x0, y0)
