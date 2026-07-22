@@ -12,9 +12,9 @@ the fit (flush = right radius; diagonal tip gap or interference = wrong).
 Rotate/reposition to test each of the four corners in turn.
 
 Two squares:
-  OUTER (front + middle, 171.5 profile): corners R52.5 / 53.0 / 53.5 / 54.0
+  FRONT (front + middle sheets, 171.5 profile): corners R52.5/53.0/53.5/54.0
     (calc R53.36)
-  REAR  (160 profile):                   corners R46.5 / 47.0 / 47.5 / 48.0
+  REAR  (rear sheet, 160 profile):              corners R46.5/47.0/47.5/48.0
     (calc R47.41)
 
 The 45-degree corner setback is s = R*(sqrt(2)-1), so a measured diagonal
@@ -41,8 +41,8 @@ import os
 import ezdxf
 
 # --- Candidate radii per corner, order = [BL, BR, TR, TL] (CCW from lower-left)
-OUTER_RADII = [52.5, 53.0, 53.5, 54.0]   # front + middle: calc 53.36
-REAR_RADII = [46.5, 47.0, 47.5, 48.0]    # rear:           calc 47.41
+FRONT_RADII = [52.5, 53.0, 53.5, 54.0]   # front + middle sheets: calc 53.36
+REAR_RADII = [46.5, 47.0, 47.5, 48.0]    # rear sheet:            calc 47.41
 
 # --- Frame geometry (mm) ---
 FRAME_W = 24.0       # band width (outer edge to inner edge); holds corner label
@@ -207,7 +207,7 @@ def _write_square(radii, output_dir, name):
 
 def build(output_dir):
     # Two separate files -- Ponoko treats each uploaded DXF as one part.
-    _write_square(OUTER_RADII, output_dir, "fatif_corner_squares_outer.dxf")
+    _write_square(FRONT_RADII, output_dir, "fatif_corner_squares_front.dxf")
     _write_square(REAR_RADII, output_dir, "fatif_corner_squares_rear.dxf")
     print("  Upload each DXF (not PDF); bare 5052 aluminum .040-.063, no finish.")
 
