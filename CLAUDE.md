@@ -110,8 +110,10 @@ CNC variant parameters:
     Both need a checkout note and are material-limited
   - Cheap/no-finish prototype stock: bare 5052 aluminum (economical alloy)
   - Corner squares (`make blanks`) are built to these rules: two square frames
-    (one part each), 4 different corner radii per square, cut-through 7-seg
-    labels on each corner band, all closed contours on layer `0`
+    written as SEPARATE DXFs (one part each — Ponoko treats each file as one
+    part), 4 different corner radii per square, cut-through 7-seg labels on
+    each corner band, all closed contours on layer `0`, units stamped mm
+    (`$INSUNITS=4`) so vendors don't read the file as inches (Ponoko did)
 - **SendCutSend** (CNC machining): single-piece 6061-T6 billet body
   - Upload STEP file (not DXF); auto-detected as CNC part
   - Finishes: media blast, Type II anodize (no powder coat for CNC)

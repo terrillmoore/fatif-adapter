@@ -22,9 +22,11 @@ interference dd maps to dR = 2.414*dd -- that amplification plus laser
 tolerance (~0.13mm) is why we bracket in 0.5mm steps around each target.
 
 SendCutSend setup (per their current guidelines):
-  * Upload this DXF, NOT a PDF. Instant-price 2D formats are dxf/dwg/eps/ai.
-  * Two connected frames = two parts, pre-nested in one file (same material
-    and thickness). Both are single closed bands (outer + inner contour).
+  * Upload each DXF, NOT a PDF. Instant-price 2D formats are dxf/dwg/eps/ai.
+  * Written as TWO separate files (one square each) -- Ponoko treats each
+    uploaded DXF as a single part. Each square is a closed band (outer +
+    inner contour). Units are stamped as mm ($INSUNITS=4) so no vendor
+    misreads the file as inches.
   * Radius values are cut clean THROUGH the band as 7-segment numerals, on the
     corner arc adjacent to each corner (SCS does no solid/raster engraving;
     single-line etch would need SCS_SLE + a checkout note + eligible material).
@@ -45,7 +47,6 @@ REAR_RADII = [46.5, 47.0, 47.5, 48.0]    # rear:           calc 47.41
 # --- Frame geometry (mm) ---
 FRAME_W = 24.0       # band width (outer edge to inner edge); holds corner label
 FLAT_MIN = 50.0      # shortest straight flat (registration length)
-SQUARE_GAP = 30.0    # gap between the two squares in the layout
 
 # --- 7-segment numeral (cut-through) ---
 # Kept small and horizontal so each label sits inside the thick corner band
@@ -187,24 +188,28 @@ def add_square(msp, radii, x0, y0):
     return B, y0 + B
 
 
-def build(output_dir):
+def _write_square(radii, output_dir, name):
+    """Write one square gauge to its own DXF (one Ponoko/SCS part per file)."""
     doc = ezdxf.new("R2010")
     # Declare millimeters so vendors don't misread the units. Without an
     # explicit mm flag ($INSUNITS=4), Ponoko assumes the coordinates are
     # inches and scales the part by 25.4 (157.5mm -> 4000mm).
     doc.units = ezdxf.units.MM          # sets $INSUNITS = 4
     doc.header["$MEASUREMENT"] = 1       # metric
-    msp = doc.modelspace()
-
-    # REAR square on the bottom, OUTER square above it (left-aligned).
-    _, rear_top = add_square(msp, REAR_RADII, 0.0, 0.0)
-    add_square(msp, OUTER_RADII, 0.0, rear_top + SQUARE_GAP)
-
-    path = os.path.join(output_dir, "fatif_corner_squares.dxf")
+    B, _ = add_square(doc.modelspace(), radii, 0.0, 0.0)
+    path = os.path.join(output_dir, name)
     doc.saveas(path)
-    print("  Corner squares: OUTER %d + REAR %d corners, 2 frames -> %s"
-          % (len(OUTER_RADII), len(REAR_RADII), path))
-    print("  Upload the DXF (not PDF); bare 5052 aluminum .040-.063, no finish.")
+    print("  %-5s square: %.1fx%.1fmm, corners %s -> %s"
+          % (name.split("_")[-1].split(".")[0].upper(), B, B,
+             "/".join("%.1f" % r for r in radii), path))
+    return path
+
+
+def build(output_dir):
+    # Two separate files -- Ponoko treats each uploaded DXF as one part.
+    _write_square(OUTER_RADII, output_dir, "fatif_corner_squares_outer.dxf")
+    _write_square(REAR_RADII, output_dir, "fatif_corner_squares_rear.dxf")
+    print("  Upload each DXF (not PDF); bare 5052 aluminum .040-.063, no finish.")
 
 
 def main():
