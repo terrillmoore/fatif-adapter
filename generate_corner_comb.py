@@ -12,7 +12,7 @@ flats, and find the radius that seats flush -- no diagonal tip interference and
 no corner gap. Then measure the winning flat length to back-check.
 
 Two combs:
-  OUTER (front + middle, 171.5 profile): R52.0..54.0  (calc R53.36)
+  OUTER (front + middle, 171.5 profile): R52.5..54.0  (calc R53.36)
   REAR  (160 profile):                   R46.5..48.0  (calc R47.41)
 
 The 45-degree corner setback is s = R*(sqrt(2)-1), so a measured diagonal
@@ -42,7 +42,7 @@ import os
 import ezdxf
 
 # --- Radius brackets (mm), 0.5mm steps around the computed targets ---
-OUTER_RADII = [52.0, 52.5, 53.0, 53.5, 54.0]   # front+middle: calc 53.36
+OUTER_RADII = [52.5, 53.0, 53.5, 54.0]         # front+middle: calc 53.36
 REAR_RADII = [46.5, 47.0, 47.5, 48.0]          # rear:         calc 47.41
 
 # --- Tooth / comb geometry (mm) ---
