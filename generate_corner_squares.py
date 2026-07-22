@@ -44,7 +44,7 @@ REAR_RADII = [46.5, 47.0, 47.5, 48.0]    # rear:           calc 47.41
 
 # --- Frame geometry (mm) ---
 FRAME_W = 24.0       # band width (outer edge to inner edge); holds corner label
-FLAT_MIN = 18.0      # shortest straight flat (registration length)
+FLAT_MIN = 50.0      # shortest straight flat (registration length)
 SQUARE_GAP = 30.0    # gap between the two squares in the layout
 
 # --- 7-segment numeral (cut-through) ---
