@@ -46,8 +46,8 @@ import os
 import ezdxf
 
 # --- Candidate radii per corner, order = [BL, BR, TR, TL] (CCW from lower-left)
-FRONT_RADII = [52.5, 53.0, 53.5, 54.0]   # front + middle sheets: calc 53.36
-REAR_RADII = [46.5, 47.0, 47.5, 48.0]    # rear sheet:            calc 47.41
+FRONT_RADII = [54.5, 55.0, 55.5, 56.0]   # front + middle sheets: calc 53.36 ; 54 is too small
+REAR_RADII = [48.5, 49.0, 49.5, 50.0]    # rear sheet:            calc 47.41 ; 48 is too small
 
 # --- Geometry (mm) ---
 FLAT_MIN = 50.0        # shortest straight flat (registration length)
