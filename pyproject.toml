@@ -1,16 +1,14 @@
 [project]
 name = "fatif-adapter"
-version = "0.1.0"
+version = "0.2.0"
 description = "Parametric adapter lensboard mounting Gowland 8x10 boards in a Fatif DS 20x25 front standard"
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 license = { text = "MIT" }
 authors = [{ name = "Terrill Moore", email = "tmm@mcci.com" }]
 dependencies = [
-    "cadquery==2.6.1",
-    # nlopt is a cadquery dep; 2.10+ dropped macOS x86_64 wheels, so pin to
-    # the newest version that still ships Intel-mac + win_amd64 + linux wheels.
-    "nlopt==2.9.1",
+    "cadquery>=2.6.1",
+    "nlopt>=2.9.1",
     "ezdxf>=1.4",
     "matplotlib>=3.8",
     "numpy>=1.26",
