@@ -53,9 +53,16 @@ import os
 # PARAMETERS (all dimensions in mm, as-finished unless noted)
 # ================================================================
 
-# --- Outer profile (from caliper measurements of Fatif original) ---
+# --- Outer profile (front + middle sheets, seat in the casting opening) ---
+# Corner radius confirmed by the 2nd-round bare-aluminum test gauges (see
+# generate_corner_squares.py): the casting's outer corner reads R54.5. The
+# front sheet is powder coated (~0.163mm/surface), which grows a convex corner
+# radius by that much, so cut it 0.163 smaller to land on 54.5 finished. Laser
+# kerf does NOT offset this -- the bare gauges already carry the same kerf, so
+# it cancels between gauge and production. The bare middle sheet ends ~0.16mm
+# pointier (tiny corner gap, harmless). X-Y stays 171.5 (coated fit judged OK).
 BOARD_SIZE = 171.5          # square dimension (ruler measurement)
-BOARD_CORNER_R = 50.75      # corner radius: (171.5 - 70mm straight edge) / 2
+BOARD_CORNER_R = 54.34      # = 54.5 casting corner - 0.163 powder coat (was 50.75)
 
 # --- Sheet thicknesses (as-finished, including coatings) ---
 # Front: SendCutSend .063" 6061-T6 powder coated (1.60 raw + 0.18 coat)
@@ -67,10 +74,16 @@ REAR_THICK = 2.56           # .100" 6061 black anodized
 
 TOTAL_THICKNESS = FRONT_THICK + MIDDLE_THICK + REAR_THICK  # = 4.98mm
 
-# --- Back perimeter step (from caliper measurement) ---
-STEP_WIDTH = 5.75           # lip width from outer edge (caliper)
-REAR_SIZE = BOARD_SIZE - 2 * STEP_WIDTH        # = 160.0
-REAR_CORNER_R = BOARD_CORNER_R - STEP_WIDTH    # = 45.0
+# --- Rear sheet profile (baffle behind the opening; forms the seating lip) ---
+# Size reduced 0.5mm from 160 -- first fab's rear read ~0.5mm too big in X-Y
+# (fouling the casting's inner rib). Anodize is ~0.02mm/surface (negligible on
+# size). Corner radius confirmed by the bare test gauge: casting reads R49.5;
+# minus 0.02 anodize -> 49.48. Both decoupled from the old
+# BOARD_CORNER_R/STEP_WIDTH derivation -- the outer (54.5) and rear (49.5)
+# casting corners are not a clean concentric offset.
+REAR_SIZE = 159.5           # was 160.0 (BOARD_SIZE - 2*STEP_WIDTH); -0.5 for rib clearance
+REAR_CORNER_R = 49.48       # = 49.5 casting corner - 0.02 anodize (was 45.0)
+STEP_WIDTH = (BOARD_SIZE - REAR_SIZE) / 2      # lip overhang, now 6.0 (was 5.75)
 
 # --- Front cutout (Gowland board drops through this) ---
 # Gowland 8x10 board is 138.5mm sq, R3.46 corners (measured from the vector
