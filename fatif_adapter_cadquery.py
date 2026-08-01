@@ -53,16 +53,28 @@ import os
 # PARAMETERS (all dimensions in mm, as-finished unless noted)
 # ================================================================
 
+# --- Coating allowance (per surface) ---
+# Powder coat and anodize both add material normal to EVERY surface, so a cut
+# profile grows on coating: flats move out by t, the convex corner radius grows
+# by t, and the corner arc CENTER stays put. To land a coated part on the
+# casting we therefore define the FINISHED (coated) profile that must fit, then
+# cut = finished offset inward by the coat: size -= 2t, radius -= t. Cutting the
+# radius alone (size held) would leave the center too far out -> corner pokes.
+FRONT_COAT = 0.163          # powder coat per surface (front sheet)
+REAR_COAT = 0.02            # black anodize per surface (rear sheet)
+
 # --- Outer profile (front + middle sheets, seat in the casting opening) ---
-# Corner radius confirmed by the 2nd-round bare-aluminum test gauges (see
-# generate_corner_squares.py): the casting's outer corner reads R54.5. The
-# front sheet is powder coated (~0.163mm/surface), which grows a convex corner
-# radius by that much, so cut it 0.163 smaller to land on 54.5 finished. Laser
-# kerf does NOT offset this -- the bare gauges already carry the same kerf, so
-# it cancels between gauge and production. The bare middle sheet ends ~0.16mm
-# pointier (tiny corner gap, harmless). X-Y stays 171.5 (coated fit judged OK).
-BOARD_SIZE = 171.5          # square dimension (ruler measurement)
-BOARD_CORNER_R = 54.34      # = 54.5 casting corner - 0.163 powder coat (was 50.75)
+# Finished targets: 171.5 flat-to-flat (fits the opening) and R54.5 corner
+# (casting outer corner, confirmed by the 2nd-round bare-aluminum test gauges,
+# see generate_corner_squares.py). Cut = finished - coat. Laser kerf does NOT
+# offset the coat -- the bare gauges already carry the same kerf, so it cancels
+# between gauge and production. The bare middle sheet (cut at BOARD_SIZE, no
+# coat) ends ~0.16mm smaller/pointier than the coated front -- harmless, it sits
+# behind and doesn't fill the casting corner.
+BOARD_FINISH_SIZE = 171.5   # finished flat-to-flat (coated)
+BOARD_FINISH_R = 54.5       # finished corner = casting outer corner (bare-gauge)
+BOARD_SIZE = BOARD_FINISH_SIZE - 2 * FRONT_COAT   # cut = 171.174 (was 171.5)
+BOARD_CORNER_R = BOARD_FINISH_R - FRONT_COAT      # cut = 54.337 (was 50.75)
 
 # --- Sheet thicknesses (as-finished, including coatings) ---
 # Front: SendCutSend .063" 6061-T6 powder coated (1.60 raw + 0.18 coat)
@@ -75,15 +87,17 @@ REAR_THICK = 2.56           # .100" 6061 black anodized
 TOTAL_THICKNESS = FRONT_THICK + MIDDLE_THICK + REAR_THICK  # = 4.98mm
 
 # --- Rear sheet profile (baffle behind the opening; forms the seating lip) ---
-# Size reduced 0.5mm from 160 -- first fab's rear read ~0.5mm too big in X-Y
-# (fouling the casting's inner rib). Anodize is ~0.02mm/surface (negligible on
-# size). Corner radius confirmed by the bare test gauge: casting reads R49.5;
-# minus 0.02 anodize -> 49.48. Both decoupled from the old
-# BOARD_CORNER_R/STEP_WIDTH derivation -- the outer (54.5) and rear (49.5)
-# casting corners are not a clean concentric offset.
-REAR_SIZE = 159.5           # was 160.0 (BOARD_SIZE - 2*STEP_WIDTH); -0.5 for rib clearance
-REAR_CORNER_R = 49.48       # = 49.5 casting corner - 0.02 anodize (was 45.0)
-STEP_WIDTH = (BOARD_SIZE - REAR_SIZE) / 2      # lip overhang, now 6.0 (was 5.75)
+# Finished targets: 159.5 flat-to-flat (was 160; -0.5 because first fab's rear
+# read ~0.5mm too big, fouling the casting's inner rib) and R49.5 corner
+# (casting rear corner, bare-gauge confirmed). Rear is anodized, so cut =
+# finished - anodize. Decoupled from the old BOARD_CORNER_R/STEP_WIDTH
+# derivation -- the outer (54.5) and rear (49.5) casting corners are not a clean
+# concentric offset.
+REAR_FINISH_SIZE = 159.5    # finished flat-to-flat (anodized)
+REAR_FINISH_R = 49.5        # finished corner = casting rear corner (bare-gauge)
+REAR_SIZE = REAR_FINISH_SIZE - 2 * REAR_COAT   # cut = 159.46 (was 160.0)
+REAR_CORNER_R = REAR_FINISH_R - REAR_COAT      # cut = 49.48 (was 45.0)
+STEP_WIDTH = (BOARD_FINISH_SIZE - REAR_FINISH_SIZE) / 2   # finished lip overhang = 6.0
 
 # --- Front cutout (Gowland board drops through this) ---
 # Gowland 8x10 board is 138.5mm sq, R3.46 corners (measured from the vector
